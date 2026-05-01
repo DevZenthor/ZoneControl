@@ -64,7 +64,7 @@ export default function Register() {
           <div className="auth-logo-icon">
             <FiUserPlus size={22} />
           </div>
-          <h1 className="auth-title">FN Tracker</h1>
+          <h1 className="auth-title">ZoneControl</h1>
           <p className="auth-subtitle">Crée ton compte gratuitement</p>
         </motion.div>
 
