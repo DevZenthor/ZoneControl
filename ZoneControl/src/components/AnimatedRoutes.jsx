@@ -1,0 +1,66 @@
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { AnimatePresence, motion } from 'framer-motion'
+import Home from '../pages/Home'
+import Login from '../pages/Login'
+import Register from '../pages/Register'
+import Profile from '../pages/Profile'
+import PlayerDetail from '../pages/PlayerDetail'
+
+const pageVariants = {
+  initial: { opacity: 0, y: 16 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' } },
+  exit:    { opacity: 0, y: -10, transition: { duration: 0.2 } },
+}
+
+function PageWrapper({ children }) {
+  return (
+    <motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit">
+      {children}
+    </motion.div>
+  )
+}
+
+export default function AnimatedRoutes({ session }) {
+  const location = useLocation()
+  const isAuth   = session !== null
+
+  return (
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+
+        <Route path="/" element={
+          isAuth
+            ? <PageWrapper><Home session={session} /></PageWrapper>
+            : <Navigate to="/login" replace />
+        } />
+
+        <Route path="/login" element={
+          isAuth
+            ? <Navigate to="/" replace />
+            : <PageWrapper><Login /></PageWrapper>
+        } />
+
+        <Route path="/register" element={
+          isAuth
+            ? <Navigate to="/" replace />
+            : <PageWrapper><Register /></PageWrapper>
+        } />
+
+        <Route path="/player/:id" element={
+          isAuth
+            ? <PageWrapper><PlayerDetail session={session} /></PageWrapper>
+            : <Navigate to="/login" replace />
+        } />
+
+        <Route path="/profile" element={
+          isAuth
+            ? <PageWrapper><Profile session={session} /></PageWrapper>
+            : <Navigate to="/login" replace />
+        } />
+
+        <Route path="*" element={<Navigate to="/" replace />} />
+
+      </Routes>
+    </AnimatePresence>
+  )
+}

@@ -1,0 +1,380 @@
+@import './variables.css';
+
+/* ─── Page layout ────────────────────────── */
+.home-wrapper {
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-primary);
+}
+
+.home-content {
+  position: relative;
+  z-index: 1;
+  padding: 3rem 0 5rem;
+}
+
+/* ─── Orbs background ────────────────────── */
+.orb {
+  position: fixed;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(60px);
+}
+
+.orb-1 {
+  width: 600px;
+  height: 600px;
+  top: -100px;
+  left: -150px;
+  background: radial-gradient(circle, rgba(123, 47, 247, 0.12) 0%, transparent 70%);
+}
+
+.orb-2 {
+  width: 500px;
+  height: 500px;
+  top: 40%;
+  right: -100px;
+  background: radial-gradient(circle, rgba(0, 212, 255, 0.09) 0%, transparent 70%);
+}
+
+.orb-3 {
+  width: 400px;
+  height: 400px;
+  bottom: 0;
+  left: 30%;
+  background: radial-gradient(circle, rgba(255, 45, 120, 0.07) 0%, transparent 70%);
+}
+
+/* ─── Grid noise overlay ─────────────────── */
+.home-wrapper::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0, 212, 255, 0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 212, 255, 0.015) 1px, transparent 1px);
+  background-size: 60px 60px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ─── Header ─────────────────────────────── */
+.home-header {
+  margin-bottom: 2.5rem;
+}
+
+.home-title {
+  font-size: clamp(2.2rem, 5vw, 3.2rem);
+  font-weight: 900;
+  letter-spacing: -2px;
+  line-height: 1.05;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, #00d4ff 0%, #7b2ff7 50%, #ff2d78 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.home-subtitle {
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.home-subtitle::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-cyan);
+  box-shadow: 0 0 8px var(--accent-cyan);
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.7); }
+}
+
+/* ─── Controls bar ───────────────────────── */
+.home-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.home-search {
+  flex: 1;
+  min-width: 200px;
+  max-width: 340px;
+  background: rgba(8, 8, 16, 0.9) !important;
+  border: 1px solid rgba(255, 255, 255, 0.07) !important;
+  padding: 0.6rem 1rem !important;
+  font-size: 0.88rem !important;
+  color: var(--text-primary) !important;
+  border-radius: var(--radius-sm) !important;
+  transition: var(--transition);
+}
+
+.home-search:focus {
+  border-color: var(--accent-cyan) !important;
+  box-shadow:
+    0 0 0 3px rgba(0, 212, 255, 0.08),
+    0 0 20px rgba(0, 212, 255, 0.06) !important;
+}
+
+/* ─── Player grid ────────────────────────── */
+.player-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+/* ─── Player card ────────────────────────── */
+.player-card {
+  background: var(--bg-card);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-md);
+  padding: 1.4rem;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.25s ease, background 0.25s ease;
+  height: 100%;
+}
+
+.player-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(123, 47, 247, 0.04) 0%,
+    transparent 60%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.player-card:hover::before { opacity: 1; }
+
+.player-card:hover {
+  border-color: rgba(0, 212, 255, 0.22);
+  background: var(--bg-card-hover);
+}
+
+.player-card-glow {
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  width: 150px;
+  height: 150px;
+  background: radial-gradient(circle, rgba(123, 47, 247, 0.1) 0%, transparent 70%);
+  pointer-events: none;
+  border-radius: 50%;
+}
+
+.player-card-name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 0.8rem;
+  padding-right: 1.8rem;
+  background: linear-gradient(135deg, #00d4ff, #a066ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.player-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.player-card-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.player-card-row a {
+  font-size: 0.85rem;
+  transition: var(--transition);
+}
+
+.player-card-delete {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.95rem;
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: var(--transition);
+}
+
+.player-card-delete:hover {
+  color: var(--accent-pink);
+  background: rgba(255, 45, 120, 0.1);
+}
+
+.player-card-bottom-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple));
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s ease;
+}
+
+.player-card:hover .player-card-bottom-bar {
+  transform: scaleX(1);
+}
+
+/* ─── Empty state ────────────────────────── */
+.home-empty {
+  text-align: center;
+  padding: 5rem 2rem;
+  background: var(--bg-card);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.home-empty-icon {
+  font-size: 3.5rem;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+.home-empty-text {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  margin-bottom: 1.5rem;
+}
+
+/* ─── Stats bar ──────────────────────────── */
+.home-stats {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 3rem;
+}
+
+.home-stat-card {
+  flex: 1;
+  min-width: 110px;
+  background: rgba(0, 212, 255, 0.04);
+  border: 1px solid rgba(0, 212, 255, 0.1);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.2rem;
+  text-align: center;
+  cursor: default;
+  transition: var(--transition);
+}
+
+.home-stat-card:hover {
+  background: rgba(0, 212, 255, 0.08);
+  border-color: rgba(0, 212, 255, 0.25);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0, 212, 255, 0.08);
+}
+
+.home-stat-value {
+  font-size: 1.6rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1.2;
+}
+
+.home-stat-label {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 0.25rem;
+}
+
+/* ─── Add form wrapper ───────────────────── */
+.home-form-wrapper {
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+
+/* ─── Loader ─────────────────────────────── */
+.home-loader {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 5rem 0;
+}
+
+/* ─── Responsive ─────────────────────────── */
+@media (max-width: 768px) {
+  .home-content { padding: 2rem 0 4rem; }
+  .home-title   { letter-spacing: -1px; }
+  .player-grid  { grid-template-columns: 1fr; }
+  .home-stats   { gap: 0.6rem; }
+  .home-stat-card { padding: 0.8rem; }
+  .home-stat-value { font-size: 1.3rem; }
+  .home-controls { gap: 0.6rem; }
+  .home-search  { max-width: 100%; }
+}
+
+@media (max-width: 480px) {
+  .home-stats { display: grid; grid-template-columns: 1fr 1fr; }
+}
+
+.home-wrapper {
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+  background: transparent; /* le canvas gère le fond */
+}
+.home-search-wrapper {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+  max-width: 340px;
+}
+
+.home-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  font-size: 14px;
+  pointer-events: none;
+}
+
+.home-search {
+  width: 100%;
+  max-width: 100%;
+  padding: 0.6rem 1rem 0.6rem 2.4rem !important;
+}
+
+.home-stat-icon {
+  color: var(--accent-cyan);
+  margin-bottom: 0.3rem;
+  display: flex;
+  justify-content: center;
+}
