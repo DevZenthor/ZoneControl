@@ -70,7 +70,7 @@ export default function Navbar({ session }) {
             <div className="navbar-logo-icon">
               <FiZap size={16} />
             </div>
-            <span className="navbar-logo-text">FN Tracker</span>
+            <span className="navbar-logo-text">ZoneControl</span>
           </motion.div>
 
           {/* ── Links desktop ── */}

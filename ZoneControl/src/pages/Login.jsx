@@ -37,7 +37,7 @@ export default function Login() {
           <div className="auth-logo-icon">
             <FiLogIn size={22} />
           </div>
-          <h1 className="auth-title">FN Tracker</h1>
+          <h1 className="auth-title">ZoneControl</h1>
           <p className="auth-subtitle">Connecte-toi à ton espace</p>
         </motion.div>
 

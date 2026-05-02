@@ -40,6 +40,16 @@ const PERIODS = [
     { label: 'Tout',   days: null },
 ]
 
+const EMPTY_PERF = {
+    date:         '',
+    event_name:   '',
+    classement:   '',
+    top1_count:   '',
+    pr_win_count: '',
+    pr_total:     '',
+    region:       'EU',
+}
+
 export default function PlayerDetail({ session }) {
     const { id } = useParams()
     const navigate = useNavigate()
@@ -49,12 +59,16 @@ export default function PlayerDetail({ session }) {
     const [performances, setPerformances] = useState([])
     const [showForm, setShowForm]         = useState(false)
     const [showEdit, setShowEdit]         = useState(false)
+    const [editPerfId, setEditPerfId]     = useState(null)
+    const [editPerfForm, setEditPerfForm] = useState(EMPTY_PERF)
+    const [savingPerf, setSavingPerf]     = useState(false)
     const [loading, setLoading]           = useState(true)
     const [saving, setSaving]             = useState(false)
     const [savingEdit, setSavingEdit]     = useState(false)
     const [savingNotes, setSavingNotes]   = useState(false)
     const [notesSaved, setNotesSaved]     = useState(false)
     const [error, setError]               = useState('')
+    const [editPerfError, setEditPerfError] = useState('')
     const [editSuccess, setEditSuccess]   = useState(false)
     const [confirmModal, setConfirmModal] = useState({ open: false, perfId: null })
     const [lastKnownPr, setLastKnownPr]   = useState(0)
@@ -86,13 +100,13 @@ export default function PlayerDetail({ session }) {
         setPlayer(p)
         if (p) {
             setEditForm({
-                pseudo:       p.pseudo       || '',
-                age:          p.age          || '',
-                team:         p.team         || '',
-                pr_link:      p.pr_link      || '',
-                twitter:      p.twitter      || '',
-                statut:       p.statut       || 'Actif',
-                pr_objectif:  p.pr_objectif  || '',
+                pseudo:      p.pseudo      || '',
+                age:         p.age         || '',
+                team:        p.team        || '',
+                pr_link:     p.pr_link     || '',
+                twitter:     p.twitter     || '',
+                statut:      p.statut      || 'Actif',
+                pr_objectif: p.pr_objectif || '',
             })
             setNotes(p.notes || '')
         }
@@ -182,6 +196,49 @@ export default function PlayerDetail({ session }) {
         toast.success('Performance enregistrée !')
         fetchAll()
         setSaving(false)
+    }
+
+    // ── Edit performance ──
+    const openEditPerf = (perf) => {
+        setEditPerfId(perf.id)
+        setEditPerfForm({
+            date:         perf.date         || '',
+            event_name:   perf.event_name   || '',
+            classement:   perf.classement   || '',
+            top1_count:   perf.top1_count   || '',
+            pr_win_count: perf.pr_win_count || '',
+            pr_total:     perf.pr_total     || '',
+            region:       perf.region       || 'EU',
+        })
+        setEditPerfError('')
+    }
+
+    const handleEditPerf = async (e) => {
+        e.preventDefault()
+        setSavingPerf(true)
+        setEditPerfError('')
+
+        const { error } = await supabase.from('performances').update({
+            date:         editPerfForm.date,
+            event_name:   editPerfForm.event_name   || null,
+            classement:   editPerfForm.classement   ? parseInt(editPerfForm.classement)   : null,
+            top1_count:   editPerfForm.top1_count   ? parseInt(editPerfForm.top1_count)   : 0,
+            pr_win_count: editPerfForm.pr_win_count ? parseInt(editPerfForm.pr_win_count) : 0,
+            pr_total:     editPerfForm.pr_total     ? parseInt(editPerfForm.pr_total)     : null,
+            region:       editPerfForm.region,
+        }).eq('id', editPerfId)
+
+        if (error) {
+            setEditPerfError(error.message)
+            toast.error(error.message)
+            setSavingPerf(false)
+            return
+        }
+
+        toast.success('Performance modifiée !')
+        setEditPerfId(null)
+        fetchAll()
+        setSavingPerf(false)
     }
 
     const deletePerf = async () => {
@@ -309,7 +366,7 @@ export default function PlayerDetail({ session }) {
                     </div>
                 </motion.div>
 
-                {/* ── Edit Modal ── */}
+                {/* ── Edit Player Modal ── */}
                 <AnimatePresence>
                     {showEdit && (
                         <>
@@ -376,8 +433,7 @@ export default function PlayerDetail({ session }) {
                                         <div className="col-12 col-md-6">
                                             <label className="pd-label">Objectif PR</label>
                                             <input className="pd-input" type="number" min="0"
-                                                value={editForm.pr_objectif}
-                                                placeholder="ex: 5000"
+                                                value={editForm.pr_objectif} placeholder="ex: 5000"
                                                 onChange={e => setEditForm({ ...editForm, pr_objectif: e.target.value })} />
                                         </div>
                                         <div className="col-12">
@@ -385,8 +441,7 @@ export default function PlayerDetail({ session }) {
                                             <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
                                                 {['Actif', 'Inactif', 'Free Agent'].map(s => (
                                                     <motion.button
-                                                        key={s}
-                                                        type="button"
+                                                        key={s} type="button"
                                                         whileHover={{ scale: 1.05 }}
                                                         whileTap={{ scale: 0.95 }}
                                                         onClick={() => setEditForm({ ...editForm, statut: s })}
@@ -396,10 +451,8 @@ export default function PlayerDetail({ session }) {
                                                             border: `1px solid ${editForm.statut === s ? STATUT_COLORS[s].border : 'rgba(255,255,255,0.08)'}`,
                                                             background: editForm.statut === s ? STATUT_COLORS[s].bg : 'transparent',
                                                             color: editForm.statut === s ? STATUT_COLORS[s].color : 'var(--text-muted)',
-                                                            fontSize: '0.82rem',
-                                                            fontWeight: 600,
-                                                            cursor: 'pointer',
-                                                            transition: 'all 0.2s',
+                                                            fontSize: '0.82rem', fontWeight: 600,
+                                                            cursor: 'pointer', transition: 'all 0.2s',
                                                         }}
                                                     >
                                                         {s}
@@ -409,10 +462,8 @@ export default function PlayerDetail({ session }) {
                                         </div>
                                     </div>
                                     <motion.button
-                                        className="btn-accent mt-3"
-                                        type="submit" disabled={savingEdit}
-                                        whileHover={{ scale: 1.02 }}
-                                        whileTap={{ scale: 0.97 }}
+                                        className="btn-accent mt-3" type="submit" disabled={savingEdit}
+                                        whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
                                         style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
                                     >
                                         {savingEdit
@@ -420,6 +471,105 @@ export default function PlayerDetail({ session }) {
                                             : editSuccess
                                                 ? <><FiCheck size={15} /> Sauvegardé !</>
                                                 : <><FiSave size={15} /> Sauvegarder</>
+                                        }
+                                    </motion.button>
+                                </form>
+                            </motion.div>
+                        </>
+                    )}
+                </AnimatePresence>
+
+                {/* ── Edit Performance Modal ── */}
+                <AnimatePresence>
+                    {editPerfId && (
+                        <>
+                            <motion.div
+                                className="pd-modal-overlay"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                onClick={() => setEditPerfId(null)}
+                            />
+                            <motion.div
+                                className="pd-modal"
+                                style={{ maxWidth: 600 }}
+                                initial={{ opacity: 0, scale: 0.92, y: 20 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.92, y: 20 }}
+                                transition={{ duration: 0.25, ease: 'easeOut' }}
+                            >
+                                <div className="pd-modal-header">
+                                    <h3 className="pd-modal-title">
+                                        <FiEdit2 size={16} /> Modifier la performance
+                                    </h3>
+                                    <motion.button
+                                        className="pd-modal-close"
+                                        onClick={() => setEditPerfId(null)}
+                                        whileHover={{ scale: 1.1, rotate: 90 }}
+                                        whileTap={{ scale: 0.9 }}
+                                    >
+                                        <FiX size={16} />
+                                    </motion.button>
+                                </div>
+
+                                <form onSubmit={handleEditPerf}>
+                                    <div className="row g-3">
+                                        <div className="col-12 col-md-4">
+                                            <label className="pd-label">Date</label>
+                                            <input className="pd-input" type="date"
+                                                value={editPerfForm.date}
+                                                onChange={e => setEditPerfForm({ ...editPerfForm, date: e.target.value })} required />
+                                        </div>
+                                        <div className="col-12 col-md-4">
+                                            <label className="pd-label">Nom de l'event</label>
+                                            <input className="pd-input" type="text"
+                                                placeholder="Cash Cup, FNCS..."
+                                                value={editPerfForm.event_name}
+                                                onChange={e => setEditPerfForm({ ...editPerfForm, event_name: e.target.value })} />
+                                        </div>
+                                        <div className="col-12 col-md-4">
+                                            <label className="pd-label">Région</label>
+                                            <select className="pd-input" value={editPerfForm.region}
+                                                onChange={e => setEditPerfForm({ ...editPerfForm, region: e.target.value })}>
+                                                {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
+                                            </select>
+                                        </div>
+                                        <div className="col-6 col-md-3">
+                                            <label className="pd-label">Classement</label>
+                                            <input className="pd-input" type="number" min="1"
+                                                placeholder="ex: 12" value={editPerfForm.classement}
+                                                onChange={e => setEditPerfForm({ ...editPerfForm, classement: e.target.value })} />
+                                        </div>
+                                        <div className="col-6 col-md-3">
+                                            <label className="pd-label">Top 1</label>
+                                            <input className="pd-input" type="number" min="0"
+                                                placeholder="0" value={editPerfForm.top1_count}
+                                                onChange={e => setEditPerfForm({ ...editPerfForm, top1_count: e.target.value })} />
+                                        </div>
+                                        <div className="col-6 col-md-3">
+                                            <label className="pd-label">PR Wins</label>
+                                            <input className="pd-input" type="number" min="0"
+                                                placeholder="0" value={editPerfForm.pr_win_count}
+                                                onChange={e => setEditPerfForm({ ...editPerfForm, pr_win_count: e.target.value })} />
+                                        </div>
+                                        <div className="col-6 col-md-3">
+                                            <label className="pd-label">PR Total</label>
+                                            <input className="pd-input" type="number" min="0"
+                                                placeholder="ex: 4200" value={editPerfForm.pr_total}
+                                                onChange={e => setEditPerfForm({ ...editPerfForm, pr_total: e.target.value })} />
+                                        </div>
+                                    </div>
+
+                                    {editPerfError && <div className="alert-fn mt-3">{editPerfError}</div>}
+
+                                    <motion.button
+                                        className="btn-accent mt-3" type="submit" disabled={savingPerf}
+                                        whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+                                        style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                                    >
+                                        {savingPerf
+                                            ? <span className="auth-spinner" />
+                                            : <><FiSave size={15} /> Sauvegarder la performance</>
                                         }
                                     </motion.button>
                                 </form>
@@ -471,7 +621,6 @@ export default function PlayerDetail({ session }) {
                             const pct       = Math.min((current / target) * 100, 100)
                             const done      = current >= target
                             const remaining = Math.max(target - current, 0)
-
                             return (
                                 <>
                                     <div className="pd-objectif-header">
@@ -507,7 +656,6 @@ export default function PlayerDetail({ session }) {
                                             </span>
                                         </div>
                                     </div>
-
                                     <div className="pd-objectif-bar-bg">
                                         <motion.div
                                             className="pd-objectif-bar-fill"
@@ -521,7 +669,6 @@ export default function PlayerDetail({ session }) {
                                             }}
                                         />
                                     </div>
-
                                     <div className="pd-objectif-footer">
                                         <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
                                             {pct.toFixed(1)}% complété
@@ -754,10 +901,8 @@ export default function PlayerDetail({ session }) {
                                         {error && <div className="alert-fn mt-3">{error}</div>}
 
                                         <motion.button
-                                            className="btn-accent mt-3"
-                                            type="submit" disabled={saving}
-                                            whileHover={{ scale: 1.02 }}
-                                            whileTap={{ scale: 0.97 }}
+                                            className="btn-accent mt-3" type="submit" disabled={saving}
+                                            whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
                                             style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
                                         >
                                             {saving
@@ -822,14 +967,27 @@ export default function PlayerDetail({ session }) {
                                                         : '—'}
                                                 </td>
                                                 <td>
-                                                    <motion.button
-                                                        className="pd-delete-btn"
-                                                        onClick={() => setConfirmModal({ open: true, perfId: perf.id })}
-                                                        whileHover={{ scale: 1.15 }}
-                                                        whileTap={{ scale: 0.9 }}
-                                                    >
-                                                        <FiTrash2 size={13} />
-                                                    </motion.button>
+                                                    {/* Boutons modifier + supprimer */}
+                                                    <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
+                                                        <motion.button
+                                                            className="pd-edit-perf-btn"
+                                                            onClick={() => openEditPerf(perf)}
+                                                            whileHover={{ scale: 1.15 }}
+                                                            whileTap={{ scale: 0.9 }}
+                                                            title="Modifier"
+                                                        >
+                                                            <FiEdit2 size={13} />
+                                                        </motion.button>
+                                                        <motion.button
+                                                            className="pd-delete-btn"
+                                                            onClick={() => setConfirmModal({ open: true, perfId: perf.id })}
+                                                            whileHover={{ scale: 1.15 }}
+                                                            whileTap={{ scale: 0.9 }}
+                                                            title="Supprimer"
+                                                        >
+                                                            <FiTrash2 size={13} />
+                                                        </motion.button>
+                                                    </div>
                                                 </td>
                                             </motion.tr>
                                         ))}
