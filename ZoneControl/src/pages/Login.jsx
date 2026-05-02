@@ -6,11 +6,11 @@ import { supabase } from '../lib/supabase'
 import '../styles/auth.css'
 
 export default function Login() {
-  const [email, setEmail]         = useState('')
-  const [password, setPassword]   = useState('')
-  const [showPass, setShowPass]   = useState(false)
-  const [error, setError]         = useState('')
-  const [loading, setLoading]     = useState(false)
+  const [email, setEmail]       = useState('')
+  const [password, setPassword] = useState('')
+  const [showPass, setShowPass] = useState(false)
+  const [error, setError]       = useState('')
+  const [loading, setLoading]   = useState(false)
   const navigate = useNavigate()
 
   const handleLogin = async (e) => {
@@ -25,7 +25,6 @@ export default function Login() {
   return (
     <div className="auth-wrapper">
 
-
       <div className="auth-content">
 
         {/* Logo */}
@@ -38,7 +37,7 @@ export default function Login() {
           <div className="auth-logo-icon">
             <FiLogIn size={22} />
           </div>
-          <h1 className="auth-title">ZoneControl</h1>
+          <h1 className="auth-title">FN Tracker</h1>
           <p className="auth-subtitle">Connecte-toi à ton espace</p>
         </motion.div>
 
@@ -80,14 +79,14 @@ export default function Login() {
                   onChange={e => setPassword(e.target.value)}
                   required
                 />
-                <motion.button
+                <button
                   type="button"
                   className="auth-eye-btn"
                   onClick={() => setShowPass(v => !v)}
                   tabIndex={-1}
                 >
                   {showPass ? <FiEyeOff size={15} /> : <FiEye size={15} />}
-                </motion.button>
+                </button>
               </div>
             </div>
 
@@ -126,6 +125,17 @@ export default function Login() {
             <span>Pas de compte ?</span>
             <button className="auth-switch-btn" onClick={() => navigate('/register')}>
               <FiUserPlus size={13} /> S'inscrire
+            </button>
+          </div>
+
+          {/* Mot de passe oublié */}
+          <div style={{ textAlign: 'center', marginTop: '0.8rem' }}>
+            <button
+              className="auth-switch-btn"
+              onClick={() => navigate('/forgot-password')}
+              style={{ fontSize: '0.8rem', opacity: 0.7 }}
+            >
+              Mot de passe oublié ?
             </button>
           </div>
 

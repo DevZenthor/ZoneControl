@@ -5,20 +5,20 @@ import {
   FiCheck, FiAlertCircle, FiEye, FiEyeOff
 } from 'react-icons/fi'
 import { supabase } from '../lib/supabase'
+import { useToastContext } from '../context/ToastContext'
 import '../styles/profile.css'
 
 export default function Profile({ session }) {
-  const [profile, setProfile]       = useState(null)
-  const [pseudo, setPseudo]         = useState('')
-  const [email, setEmail]           = useState('')
-  const [newPassword, setNewPassword] = useState('')
-  const [showPass, setShowPass]     = useState(false)
-  const [avatarUrl, setAvatarUrl]   = useState(null)
-  const [uploading, setUploading]   = useState(false)
-  const [saving, setSaving]         = useState(false)
-  const [success, setSuccess]       = useState('')
-  const [error, setError]           = useState('')
+  const [profile, setProfile]           = useState(null)
+  const [pseudo, setPseudo]             = useState('')
+  const [email, setEmail]               = useState('')
+  const [newPassword, setNewPassword]   = useState('')
+  const [showPass, setShowPass]         = useState(false)
+  const [avatarUrl, setAvatarUrl]       = useState(null)
+  const [uploading, setUploading]       = useState(false)
+  const [saving, setSaving]             = useState(false)
   const fileRef = useRef()
+  const toast = useToastContext()
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -37,17 +37,9 @@ export default function Profile({ session }) {
     fetchProfile()
   }, [session])
 
-  const showMessage = (type, msg) => {
-    if (type === 'success') { setSuccess(msg); setError('') }
-    else { setError(msg); setSuccess('') }
-    setTimeout(() => { setSuccess(''); setError('') }, 3500)
-  }
-
-  // ── Upload avatar ──
   const handleAvatar = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
-
     setUploading(true)
     const ext      = file.name.split('.').pop()
     const filePath = `${session.user.id}/avatar.${ext}`
@@ -56,7 +48,11 @@ export default function Profile({ session }) {
       .from('avatars')
       .upload(filePath, file, { upsert: true })
 
-    if (upErr) { showMessage('error', upErr.message); setUploading(false); return }
+    if (upErr) {
+      toast.error(upErr.message)
+      setUploading(false)
+      return
+    }
 
     const { data: { publicUrl } } = supabase.storage
       .from('avatars')
@@ -67,44 +63,50 @@ export default function Profile({ session }) {
       .eq('id', session.user.id)
 
     setAvatarUrl(publicUrl)
-    showMessage('success', 'Photo de profil mise à jour !')
+    toast.success('Photo de profil mise à jour !')
     setUploading(false)
   }
 
-  // ── Save profile ──
   const handleSave = async (e) => {
     e.preventDefault()
     setSaving(true)
-    setError('')
-    setSuccess('')
 
-    // Update pseudo
     const { error: profileErr } = await supabase
       .from('profiles')
       .update({ pseudo })
       .eq('id', session.user.id)
 
-    if (profileErr) { showMessage('error', profileErr.message); setSaving(false); return }
-
-    // Update email
-    if (email !== session.user.email) {
-      const { error: emailErr } = await supabase.auth.updateUser({ email })
-      if (emailErr) { showMessage('error', emailErr.message); setSaving(false); return }
+    if (profileErr) {
+      toast.error(profileErr.message)
+      setSaving(false)
+      return
     }
 
-    // Update password
+    if (email !== session.user.email) {
+      const { error: emailErr } = await supabase.auth.updateUser({ email })
+      if (emailErr) {
+        toast.error(emailErr.message)
+        setSaving(false)
+        return
+      }
+    }
+
     if (newPassword) {
       if (newPassword.length < 6) {
-        showMessage('error', 'Mot de passe trop court (min. 6 caractères)')
+        toast.error('Mot de passe trop court (min. 6 caractères)')
         setSaving(false)
         return
       }
       const { error: passErr } = await supabase.auth.updateUser({ password: newPassword })
-      if (passErr) { showMessage('error', passErr.message); setSaving(false); return }
+      if (passErr) {
+        toast.error(passErr.message)
+        setSaving(false)
+        return
+      }
       setNewPassword('')
     }
 
-    showMessage('success', 'Profil sauvegardé !')
+    toast.success('Profil sauvegardé !')
     setSaving(false)
   }
 
@@ -112,11 +114,8 @@ export default function Profile({ session }) {
 
   return (
     <div className="profile-wrapper">
-
-
       <div className="container profile-content">
 
-        {/* ── Header ── */}
         <motion.div
           className="profile-header"
           initial={{ opacity: 0, y: -24 }}
@@ -148,7 +147,6 @@ export default function Profile({ session }) {
                   </div>
                 )}
               </div>
-
               <motion.button
                 className="profile-avatar-btn"
                 onClick={() => fileRef.current?.click()}
@@ -158,7 +156,6 @@ export default function Profile({ session }) {
               >
                 <FiCamera size={16} />
               </motion.button>
-
               <input
                 ref={fileRef}
                 type="file"
@@ -188,7 +185,6 @@ export default function Profile({ session }) {
           >
             <form onSubmit={handleSave}>
 
-              {/* Pseudo */}
               <div className="profile-field">
                 <label className="profile-label">
                   <FiUser size={13} /> Pseudo
@@ -203,7 +199,6 @@ export default function Profile({ session }) {
                 />
               </div>
 
-              {/* Email */}
               <div className="profile-field">
                 <label className="profile-label">
                   <FiMail size={13} /> Email
@@ -218,7 +213,6 @@ export default function Profile({ session }) {
                 />
               </div>
 
-              {/* Password */}
               <div className="profile-field">
                 <label className="profile-label">
                   <FiLock size={13} /> Nouveau mot de passe
@@ -243,31 +237,6 @@ export default function Profile({ session }) {
                 </div>
               </div>
 
-              {/* Messages */}
-              <AnimatePresence>
-                {success && (
-                  <motion.div
-                    className="profile-msg profile-msg--success"
-                    initial={{ opacity: 0, y: -5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0 }}
-                  >
-                    <FiCheck size={14} /> {success}
-                  </motion.div>
-                )}
-                {error && (
-                  <motion.div
-                    className="profile-msg profile-msg--error"
-                    initial={{ opacity: 0, y: -5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0 }}
-                  >
-                    <FiAlertCircle size={14} /> {error}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {/* Submit */}
               <motion.button
                 className="profile-save-btn"
                 type="submit"

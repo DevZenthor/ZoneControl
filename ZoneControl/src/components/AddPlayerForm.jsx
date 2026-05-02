@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '../lib/supabase'
+import { STATUT_COLORS } from '../lib/statut'
 
 export default function AddPlayerForm({ session, onAdded }) {
   const [form, setForm] = useState({
-    pseudo: '', age: '', team: '', pr_link: '', twitter: ''
+    pseudo: '', age: '', team: '', pr_link: '', twitter: '', statut: 'Actif'
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -12,7 +13,6 @@ export default function AddPlayerForm({ session, onAdded }) {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
-    setError('')
     const { error } = await supabase.from('players').insert({
       ...form,
       age: form.age ? parseInt(form.age) : null,
@@ -22,14 +22,6 @@ export default function AddPlayerForm({ session, onAdded }) {
     else onAdded()
     setLoading(false)
   }
-
-  const fields = [
-    { key: 'pseudo',   label: 'Pseudo *',           type: 'text',   required: true, col: 6 },
-    { key: 'age',      label: 'Âge',                type: 'number', col: 6 },
-    { key: 'team',     label: 'Team',               type: 'text',   col: 6 },
-    { key: 'twitter',  label: 'Twitter (sans @)',   type: 'text',   col: 6 },
-    { key: 'pr_link',  label: 'Lien PR Tracker',    type: 'url',    col: 12 },
-  ]
 
   return (
     <motion.div
@@ -45,19 +37,72 @@ export default function AddPlayerForm({ session, onAdded }) {
 
       <form onSubmit={handleSubmit}>
         <div className="row g-3">
-          {fields.map(f => (
-            <div key={f.key} className={`col-12 col-md-${f.col}`}>
-              <label className="form-label">{f.label}</label>
-              <input
-                className="form-control"
-                type={f.type}
-                required={f.required}
-                value={form[f.key]}
-                onChange={e => setForm({ ...form, [f.key]: e.target.value })}
-                placeholder={f.key === 'pr_link' ? 'https://fortnitetracker.com/profile/...' : ''}
-              />
+
+          <div className="col-12 col-md-6">
+            <label className="form-label">Pseudo *</label>
+            <input className="form-control" type="text" required
+              value={form.pseudo}
+              onChange={e => setForm({ ...form, pseudo: e.target.value })} />
+          </div>
+
+          <div className="col-12 col-md-6">
+            <label className="form-label">Âge</label>
+            <input className="form-control" type="number"
+              value={form.age}
+              onChange={e => setForm({ ...form, age: e.target.value })} />
+          </div>
+
+          <div className="col-12 col-md-6">
+            <label className="form-label">Team</label>
+            <input className="form-control" type="text"
+              value={form.team}
+              onChange={e => setForm({ ...form, team: e.target.value })} />
+          </div>
+
+          <div className="col-12 col-md-6">
+            <label className="form-label">Twitter (sans @)</label>
+            <input className="form-control" type="text"
+              value={form.twitter}
+              onChange={e => setForm({ ...form, twitter: e.target.value })} />
+          </div>
+
+          <div className="col-12 col-md-8">
+            <label className="form-label">Lien PR Tracker</label>
+            <input className="form-control" type="url"
+              value={form.pr_link}
+              placeholder="https://fortnitetracker.com/profile/..."
+              onChange={e => setForm({ ...form, pr_link: e.target.value })} />
+          </div>
+
+          {/* Statut */}
+          <div className="col-12 col-md-4">
+            <label className="form-label">Statut</label>
+            <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+              {['Actif', 'Inactif', 'Free Agent'].map(s => (
+                <motion.button
+                  key={s}
+                  type="button"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setForm({ ...form, statut: s })}
+                  style={{
+                    padding: '0.35rem 0.8rem',
+                    borderRadius: 8,
+                    border: `1px solid ${form.statut === s ? STATUT_COLORS[s].border : 'rgba(255,255,255,0.08)'}`,
+                    background: form.statut === s ? STATUT_COLORS[s].bg : 'transparent',
+                    color: form.statut === s ? STATUT_COLORS[s].color : 'var(--text-muted)',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  {s}
+                </motion.button>
+              ))}
             </div>
-          ))}
+          </div>
+
         </div>
 
         <AnimatePresence>

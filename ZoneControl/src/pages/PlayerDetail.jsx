@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -9,11 +9,14 @@ import {
 import {
     FiArrowLeft, FiPlus, FiTwitter, FiBarChart2,
     FiTrash2, FiX, FiAward, FiTarget, FiStar,
-    FiCalendar, FiCheck, FiEdit2, FiSave, FiAlertTriangle
+    FiCalendar, FiCheck, FiEdit2, FiSave, FiFileText
 } from 'react-icons/fi'
 import { FaTrophy, FaBirthdayCake } from 'react-icons/fa'
 import { supabase } from '../lib/supabase'
 import ConfirmModal from '../components/ConfirmModal'
+import StatutBadge from '../components/StatutBadge'
+import { STATUT_COLORS } from '../lib/statut'
+import { useToastContext } from '../context/ToastContext'
 import '../styles/playerdetail.css'
 
 const CustomTooltip = ({ active, payload, label }) => {
@@ -30,9 +33,17 @@ const CustomTooltip = ({ active, payload, label }) => {
     )
 }
 
+const PERIODS = [
+    { label: '7j',     days: 7    },
+    { label: '30j',    days: 30   },
+    { label: '3 mois', days: 90   },
+    { label: 'Tout',   days: null },
+]
+
 export default function PlayerDetail({ session }) {
     const { id } = useParams()
     const navigate = useNavigate()
+    const toast = useToastContext()
 
     const [player, setPlayer]             = useState(null)
     const [performances, setPerformances] = useState([])
@@ -41,12 +52,18 @@ export default function PlayerDetail({ session }) {
     const [loading, setLoading]           = useState(true)
     const [saving, setSaving]             = useState(false)
     const [savingEdit, setSavingEdit]     = useState(false)
+    const [savingNotes, setSavingNotes]   = useState(false)
+    const [notesSaved, setNotesSaved]     = useState(false)
     const [error, setError]               = useState('')
     const [editSuccess, setEditSuccess]   = useState(false)
     const [confirmModal, setConfirmModal] = useState({ open: false, perfId: null })
+    const [lastKnownPr, setLastKnownPr]   = useState(0)
+    const [period, setPeriod]             = useState(null)
+    const [notes, setNotes]               = useState('')
 
     const [editForm, setEditForm] = useState({
-        pseudo: '', age: '', team: '', pr_link: '', twitter: ''
+        pseudo: '', age: '', team: '', pr_link: '', twitter: '',
+        statut: 'Actif', pr_objectif: ''
     })
 
     const [form, setForm] = useState({
@@ -69,12 +86,21 @@ export default function PlayerDetail({ session }) {
         setPlayer(p)
         if (p) {
             setEditForm({
-                pseudo:  p.pseudo  || '',
-                age:     p.age     || '',
-                team:    p.team    || '',
-                pr_link: p.pr_link || '',
-                twitter: p.twitter || '',
+                pseudo:       p.pseudo       || '',
+                age:          p.age          || '',
+                team:         p.team         || '',
+                pr_link:      p.pr_link      || '',
+                twitter:      p.twitter      || '',
+                statut:       p.statut       || 'Actif',
+                pr_objectif:  p.pr_objectif  || '',
             })
+            setNotes(p.notes || '')
+        }
+        if (perf && perf.length > 0) {
+            const last = [...perf].reverse().find(x => x.pr_total)
+            const lastPrValue = last?.pr_total || 0
+            setLastKnownPr(lastPrValue)
+            setForm(prev => ({ ...prev, pr_total: lastPrValue ? String(lastPrValue) : '' }))
         }
         setPerformances(perf || [])
         setLoading(false)
@@ -85,20 +111,42 @@ export default function PlayerDetail({ session }) {
         fetchAll()
     }, [id])
 
+    const filteredByPeriod = useMemo(() => {
+        if (!period) return performances
+        const cutoff = new Date()
+        cutoff.setDate(cutoff.getDate() - period)
+        return performances.filter(p => new Date(p.date) >= cutoff)
+    }, [performances, period])
+
+    const chartData = filteredByPeriod.map(p => ({
+        date:       p.date,
+        classement: p.classement,
+        top1:       p.top1_count,
+        pr:         p.pr_total,
+        prWin:      p.pr_win_count,
+    }))
+
     const handleEditPlayer = async (e) => {
         e.preventDefault()
         setSavingEdit(true)
         const { error } = await supabase.from('players').update({
-            pseudo:  editForm.pseudo,
-            age:     editForm.age ? parseInt(editForm.age) : null,
-            team:    editForm.team    || null,
-            pr_link: editForm.pr_link || null,
-            twitter: editForm.twitter || null,
+            pseudo:      editForm.pseudo,
+            age:         editForm.age         ? parseInt(editForm.age)         : null,
+            team:        editForm.team        || null,
+            pr_link:     editForm.pr_link     || null,
+            twitter:     editForm.twitter     || null,
+            statut:      editForm.statut,
+            pr_objectif: editForm.pr_objectif ? parseInt(editForm.pr_objectif) : null,
         }).eq('id', id)
 
-        if (error) { setSavingEdit(false); return }
+        if (error) {
+            toast.error('Erreur lors de la sauvegarde.')
+            setSavingEdit(false)
+            return
+        }
         await fetchAll()
         setEditSuccess(true)
+        toast.success('Joueur modifié avec succès !')
         setTimeout(() => { setEditSuccess(false); setShowEdit(false) }, 1200)
         setSavingEdit(false)
     }
@@ -117,13 +165,21 @@ export default function PlayerDetail({ session }) {
             pr_total:     form.pr_total     ? parseInt(form.pr_total)     : null,
             region:       form.region,
         })
-        if (error) { setError(error.message); setSaving(false); return }
+        if (error) {
+            setError(error.message)
+            toast.error(error.message)
+            setSaving(false)
+            return
+        }
+        const newLastPr = form.pr_total ? parseInt(form.pr_total) : lastKnownPr
+        setLastKnownPr(newLastPr)
         setForm({
             date: new Date().toISOString().split('T')[0],
             event_name: '', classement: '', top1_count: '',
-            pr_win_count: '', pr_total: '', region: 'EU',
+            pr_win_count: '', pr_total: String(newLastPr), region: 'EU',
         })
         setShowForm(false)
+        toast.success('Performance enregistrée !')
         fetchAll()
         setSaving(false)
     }
@@ -132,6 +188,25 @@ export default function PlayerDetail({ session }) {
         await supabase.from('performances').delete().eq('id', confirmModal.perfId)
         setPerformances(prev => prev.filter(p => p.id !== confirmModal.perfId))
         setConfirmModal({ open: false, perfId: null })
+        toast.success('Performance supprimée.')
+    }
+
+    const handleSaveNotes = async () => {
+        setSavingNotes(true)
+        const { error } = await supabase
+            .from('players')
+            .update({ notes })
+            .eq('id', id)
+
+        if (error) {
+            toast.error('Erreur lors de la sauvegarde.')
+            setSavingNotes(false)
+            return
+        }
+        setNotesSaved(true)
+        toast.success('Notes sauvegardées !')
+        setTimeout(() => setNotesSaved(false), 2000)
+        setSavingNotes(false)
     }
 
     const totalTop1   = performances.reduce((s, p) => s + (p.top1_count || 0), 0)
@@ -140,14 +215,6 @@ export default function PlayerDetail({ session }) {
         ? Math.min(...performances.map(p => p.classement).filter(Boolean))
         : '-'
     const lastPr = [...performances].reverse().find(p => p.pr_total)?.pr_total || '-'
-
-    const chartData = performances.map(p => ({
-        date:       p.date,
-        classement: p.classement,
-        top1:       p.top1_count,
-        pr:         p.pr_total,
-        prWin:      p.pr_win_count,
-    }))
 
     if (loading) return (
         <div style={{ height: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -191,6 +258,7 @@ export default function PlayerDetail({ session }) {
                         <div>
                             <h1 className="pd-name">{player.pseudo}</h1>
                             <div className="pd-tags">
+                                <StatutBadge statut={player.statut || 'Actif'} />
                                 {player.team && (
                                     <span className="badge-team">
                                         <FaTrophy size={11} /> {player.team}
@@ -214,7 +282,6 @@ export default function PlayerDetail({ session }) {
                         >
                             <FiEdit2 size={14} /> Modifier le joueur
                         </motion.button>
-
                         <div className="pd-header-links">
                             {player.twitter && (
                                 <motion.a
@@ -273,7 +340,6 @@ export default function PlayerDetail({ session }) {
                                         <FiX size={16} />
                                     </motion.button>
                                 </div>
-
                                 <form onSubmit={handleEditPlayer}>
                                     <div className="row g-3">
                                         <div className="col-12 col-md-6">
@@ -300,19 +366,51 @@ export default function PlayerDetail({ session }) {
                                                 value={editForm.twitter} placeholder="pseudo"
                                                 onChange={e => setEditForm({ ...editForm, twitter: e.target.value })} />
                                         </div>
-                                        <div className="col-12">
+                                        <div className="col-12 col-md-6">
                                             <label className="pd-label">Lien PR Tracker</label>
                                             <input className="pd-input" type="url"
                                                 value={editForm.pr_link}
                                                 placeholder="https://fortnitetracker.com/profile/..."
                                                 onChange={e => setEditForm({ ...editForm, pr_link: e.target.value })} />
                                         </div>
+                                        <div className="col-12 col-md-6">
+                                            <label className="pd-label">Objectif PR</label>
+                                            <input className="pd-input" type="number" min="0"
+                                                value={editForm.pr_objectif}
+                                                placeholder="ex: 5000"
+                                                onChange={e => setEditForm({ ...editForm, pr_objectif: e.target.value })} />
+                                        </div>
+                                        <div className="col-12">
+                                            <label className="pd-label">Statut</label>
+                                            <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                                                {['Actif', 'Inactif', 'Free Agent'].map(s => (
+                                                    <motion.button
+                                                        key={s}
+                                                        type="button"
+                                                        whileHover={{ scale: 1.05 }}
+                                                        whileTap={{ scale: 0.95 }}
+                                                        onClick={() => setEditForm({ ...editForm, statut: s })}
+                                                        style={{
+                                                            padding: '0.4rem 0.9rem',
+                                                            borderRadius: 8,
+                                                            border: `1px solid ${editForm.statut === s ? STATUT_COLORS[s].border : 'rgba(255,255,255,0.08)'}`,
+                                                            background: editForm.statut === s ? STATUT_COLORS[s].bg : 'transparent',
+                                                            color: editForm.statut === s ? STATUT_COLORS[s].color : 'var(--text-muted)',
+                                                            fontSize: '0.82rem',
+                                                            fontWeight: 600,
+                                                            cursor: 'pointer',
+                                                            transition: 'all 0.2s',
+                                                        }}
+                                                    >
+                                                        {s}
+                                                    </motion.button>
+                                                ))}
+                                            </div>
+                                        </div>
                                     </div>
-
                                     <motion.button
                                         className="btn-accent mt-3"
-                                        type="submit"
-                                        disabled={savingEdit}
+                                        type="submit" disabled={savingEdit}
                                         whileHover={{ scale: 1.02 }}
                                         whileTap={{ scale: 0.97 }}
                                         style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
@@ -359,68 +457,193 @@ export default function PlayerDetail({ session }) {
                     ))}
                 </motion.div>
 
+                {/* ── Objectif PR ── */}
+                {player.pr_objectif && (
+                    <motion.div
+                        className="pd-objectif"
+                        initial={{ opacity: 0, y: 16 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.28, duration: 0.5 }}
+                    >
+                        {(() => {
+                            const current   = typeof lastPr === 'number' ? lastPr : 0
+                            const target    = player.pr_objectif
+                            const pct       = Math.min((current / target) * 100, 100)
+                            const done      = current >= target
+                            const remaining = Math.max(target - current, 0)
+
+                            return (
+                                <>
+                                    <div className="pd-objectif-header">
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            <FiTarget size={15} style={{ color: done ? '#00d464' : 'var(--accent-purple)' }} />
+                                            <span className="pd-objectif-title">Objectif PR</span>
+                                            {done && (
+                                                <motion.span
+                                                    initial={{ scale: 0 }}
+                                                    animate={{ scale: 1 }}
+                                                    transition={{ type: 'spring', stiffness: 400 }}
+                                                    style={{
+                                                        background: 'rgba(0,212,100,0.1)',
+                                                        border: '1px solid rgba(0,212,100,0.3)',
+                                                        color: '#00d464',
+                                                        padding: '0.15rem 0.6rem',
+                                                        borderRadius: 20,
+                                                        fontSize: '0.72rem',
+                                                        fontWeight: 700,
+                                                    }}
+                                                >
+                                                    ✓ Atteint !
+                                                </motion.span>
+                                            )}
+                                        </div>
+                                        <div className="pd-objectif-values">
+                                            <span style={{ color: done ? '#00d464' : 'var(--accent-cyan)', fontWeight: 700 }}>
+                                                {current.toLocaleString()}
+                                            </span>
+                                            <span style={{ color: 'var(--text-muted)' }}>/</span>
+                                            <span style={{ color: 'var(--text-secondary)' }}>
+                                                {target.toLocaleString()} PR
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div className="pd-objectif-bar-bg">
+                                        <motion.div
+                                            className="pd-objectif-bar-fill"
+                                            initial={{ width: 0 }}
+                                            animate={{ width: `${pct}%` }}
+                                            transition={{ duration: 1, ease: 'easeOut', delay: 0.4 }}
+                                            style={{
+                                                background: done
+                                                    ? 'linear-gradient(90deg, #00d464, #00d4ff)'
+                                                    : 'linear-gradient(90deg, var(--accent-purple), var(--accent-cyan))',
+                                            }}
+                                        />
+                                    </div>
+
+                                    <div className="pd-objectif-footer">
+                                        <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+                                            {pct.toFixed(1)}% complété
+                                        </span>
+                                        {!done && (
+                                            <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+                                                {remaining.toLocaleString()} PR restants
+                                            </span>
+                                        )}
+                                    </div>
+                                </>
+                            )
+                        })()}
+                    </motion.div>
+                )}
+
                 {/* ── Charts ── */}
                 {performances.length >= 2 && (
                     <motion.div
-                        className="pd-charts"
                         initial={{ opacity: 0, y: 24 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.35, duration: 0.5 }}
                     >
-                        <div className="pd-chart-card">
-                            <h3 className="pd-chart-title">
-                                <FiBarChart2 size={15} /> Évolution du classement
-                            </h3>
-                            <ResponsiveContainer width="100%" height={220}>
-                                <LineChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-                                    <XAxis dataKey="date" tick={{ fill: '#8888aa', fontSize: 11 }} tickLine={false} />
-                                    <YAxis reversed tick={{ fill: '#8888aa', fontSize: 11 }} tickLine={false} axisLine={false} />
-                                    <Tooltip content={<CustomTooltip />} />
-                                    <Line type="monotone" dataKey="classement" name="Classement"
-                                        stroke="#00d4ff" strokeWidth={2.5}
-                                        dot={{ fill: '#00d4ff', r: 4, strokeWidth: 0 }}
-                                        activeDot={{ r: 6, fill: '#00d4ff' }} />
-                                </LineChart>
-                            </ResponsiveContainer>
+                        <div className="pd-period-bar">
+                            <span className="pd-period-label">
+                                <FiCalendar size={13} /> Période
+                            </span>
+                            <div className="pd-period-btns">
+                                {PERIODS.map(p => (
+                                    <motion.button
+                                        key={p.label}
+                                        className={`pd-period-btn ${period === p.days ? 'pd-period-btn--active' : ''}`}
+                                        onClick={() => setPeriod(p.days)}
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                    >
+                                        {p.label}
+                                        {period === p.days && (
+                                            <motion.div
+                                                className="pd-period-indicator"
+                                                layoutId="period-indicator"
+                                                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                                            />
+                                        )}
+                                    </motion.button>
+                                ))}
+                            </div>
+                            {filteredByPeriod.length !== performances.length && (
+                                <span className="pd-period-count">
+                                    {filteredByPeriod.length} résultat{filteredByPeriod.length > 1 ? 's' : ''}
+                                </span>
+                            )}
                         </div>
 
-                        {chartData.some(d => d.pr) && (
-                            <div className="pd-chart-card">
-                                <h3 className="pd-chart-title">
-                                    <FiStar size={15} /> Évolution PR
-                                </h3>
-                                <ResponsiveContainer width="100%" height={220}>
-                                    <LineChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-                                        <XAxis dataKey="date" tick={{ fill: '#8888aa', fontSize: 11 }} tickLine={false} />
-                                        <YAxis tick={{ fill: '#8888aa', fontSize: 11 }} tickLine={false} axisLine={false} />
-                                        <Tooltip content={<CustomTooltip />} />
-                                        <Line type="monotone" dataKey="pr" name="PR Total"
-                                            stroke="#7b2ff7" strokeWidth={2.5}
-                                            dot={{ fill: '#7b2ff7', r: 4, strokeWidth: 0 }}
-                                            activeDot={{ r: 6, fill: '#7b2ff7' }} />
-                                    </LineChart>
-                                </ResponsiveContainer>
+                        {filteredByPeriod.length < 2 ? (
+                            <motion.div
+                                className="pd-empty"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                style={{ marginBottom: '2rem' }}
+                            >
+                                <FiBarChart2 size={30} style={{ color: 'var(--accent-cyan)', opacity: 0.3, marginBottom: '0.6rem' }} />
+                                <p>Pas assez de données pour cette période.</p>
+                            </motion.div>
+                        ) : (
+                            <div className="pd-charts">
+                                <div className="pd-chart-card">
+                                    <h3 className="pd-chart-title">
+                                        <FiBarChart2 size={15} /> Évolution du classement
+                                    </h3>
+                                    <ResponsiveContainer width="100%" height={220}>
+                                        <LineChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                                            <XAxis dataKey="date" tick={{ fill: '#8888aa', fontSize: 11 }} tickLine={false} />
+                                            <YAxis reversed tick={{ fill: '#8888aa', fontSize: 11 }} tickLine={false} axisLine={false} />
+                                            <Tooltip content={<CustomTooltip />} />
+                                            <Line type="monotone" dataKey="classement" name="Classement"
+                                                stroke="#00d4ff" strokeWidth={2.5}
+                                                dot={{ fill: '#00d4ff', r: 4, strokeWidth: 0 }}
+                                                activeDot={{ r: 6, fill: '#00d4ff' }} />
+                                        </LineChart>
+                                    </ResponsiveContainer>
+                                </div>
+
+                                {chartData.some(d => d.pr) && (
+                                    <div className="pd-chart-card">
+                                        <h3 className="pd-chart-title">
+                                            <FiStar size={15} /> Évolution PR
+                                        </h3>
+                                        <ResponsiveContainer width="100%" height={220}>
+                                            <LineChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
+                                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                                                <XAxis dataKey="date" tick={{ fill: '#8888aa', fontSize: 11 }} tickLine={false} />
+                                                <YAxis tick={{ fill: '#8888aa', fontSize: 11 }} tickLine={false} axisLine={false} />
+                                                <Tooltip content={<CustomTooltip />} />
+                                                <Line type="monotone" dataKey="pr" name="PR Total"
+                                                    stroke="#7b2ff7" strokeWidth={2.5}
+                                                    dot={{ fill: '#7b2ff7', r: 4, strokeWidth: 0 }}
+                                                    activeDot={{ r: 6, fill: '#7b2ff7' }} />
+                                            </LineChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                )}
+
+                                <div className="pd-chart-card pd-chart-card--full">
+                                    <h3 className="pd-chart-title">
+                                        <FiAward size={15} /> Top 1 & PR Wins par tournoi
+                                    </h3>
+                                    <ResponsiveContainer width="100%" height={220}>
+                                        <BarChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                                            <XAxis dataKey="date" tick={{ fill: '#8888aa', fontSize: 11 }} tickLine={false} />
+                                            <YAxis tick={{ fill: '#8888aa', fontSize: 11 }} tickLine={false} axisLine={false} />
+                                            <Tooltip content={<CustomTooltip />} />
+                                            <Legend wrapperStyle={{ fontSize: '0.8rem', color: '#8888aa' }} />
+                                            <Bar dataKey="top1"  name="Top 1"   fill="#ffd700" radius={[4, 4, 0, 0]} />
+                                            <Bar dataKey="prWin" name="PR Wins" fill="#7b2ff7" radius={[4, 4, 0, 0]} />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
                             </div>
                         )}
-
-                        <div className="pd-chart-card pd-chart-card--full">
-                            <h3 className="pd-chart-title">
-                                <FiAward size={15} /> Top 1 & PR Wins par tournoi
-                            </h3>
-                            <ResponsiveContainer width="100%" height={220}>
-                                <BarChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-                                    <XAxis dataKey="date" tick={{ fill: '#8888aa', fontSize: 11 }} tickLine={false} />
-                                    <YAxis tick={{ fill: '#8888aa', fontSize: 11 }} tickLine={false} axisLine={false} />
-                                    <Tooltip content={<CustomTooltip />} />
-                                    <Legend wrapperStyle={{ fontSize: '0.8rem', color: '#8888aa' }} />
-                                    <Bar dataKey="top1"  name="Top 1"   fill="#ffd700" radius={[4, 4, 0, 0]} />
-                                    <Bar dataKey="prWin" name="PR Wins" fill="#7b2ff7" radius={[4, 4, 0, 0]} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
                     </motion.div>
                 )}
 
@@ -496,10 +719,32 @@ export default function PlayerDetail({ session }) {
                                                 <label className="pd-label">PR Wins</label>
                                                 <input className="pd-input" type="number" min="0"
                                                     placeholder="0" value={form.pr_win_count}
-                                                    onChange={e => setForm({ ...form, pr_win_count: e.target.value })} />
+                                                    onChange={e => {
+                                                        const wins = parseInt(e.target.value) || 0
+                                                        setForm({
+                                                            ...form,
+                                                            pr_win_count: e.target.value,
+                                                            pr_total: String(lastKnownPr + wins)
+                                                        })
+                                                    }} />
                                             </div>
                                             <div className="col-6 col-md-3">
-                                                <label className="pd-label">PR Total</label>
+                                                <label className="pd-label" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                                    PR Total
+                                                    {form.pr_win_count && parseInt(form.pr_win_count) > 0 && (
+                                                        <span style={{
+                                                            color: 'var(--accent-cyan)',
+                                                            fontSize: '0.68rem',
+                                                            fontWeight: 500,
+                                                            background: 'rgba(0,212,255,0.08)',
+                                                            border: '1px solid rgba(0,212,255,0.2)',
+                                                            borderRadius: '4px',
+                                                            padding: '0.05rem 0.4rem',
+                                                        }}>
+                                                            {lastKnownPr} + {form.pr_win_count}
+                                                        </span>
+                                                    )}
+                                                </label>
                                                 <input className="pd-input" type="number" min="0"
                                                     placeholder="ex: 4200" value={form.pr_total}
                                                     onChange={e => setForm({ ...form, pr_total: e.target.value })} />
@@ -593,6 +838,59 @@ export default function PlayerDetail({ session }) {
                             </table>
                         </motion.div>
                     )}
+                </motion.div>
+
+                {/* ── Notes privées ── */}
+                <motion.div
+                    className="pd-section"
+                    initial={{ opacity: 0, y: 24 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.45, duration: 0.5 }}
+                >
+                    <div className="pd-section-header">
+                        <h2 className="pd-section-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <FiFileText size={18} /> Notes privées
+                        </h2>
+                        <motion.button
+                            className={notesSaved ? 'btn-ghost' : 'btn-accent'}
+                            onClick={handleSaveNotes}
+                            disabled={savingNotes}
+                            whileHover={{ scale: 1.04 }}
+                            whileTap={{ scale: 0.96 }}
+                            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem' }}
+                        >
+                            {savingNotes
+                                ? <span className="auth-spinner" />
+                                : notesSaved
+                                    ? <><FiCheck size={14} /> Sauvegardé !</>
+                                    : <><FiSave size={14} /> Sauvegarder</>
+                            }
+                        </motion.button>
+                    </div>
+
+                    <div className="pd-notes-wrapper">
+                        <textarea
+                            className="pd-notes-input"
+                            value={notes}
+                            onChange={e => setNotes(e.target.value)}
+                            placeholder="Observations, points à améliorer, stratégies, remarques sur le joueur..."
+                            rows={6}
+                            onKeyDown={e => {
+                                if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                                    e.preventDefault()
+                                    handleSaveNotes()
+                                }
+                            }}
+                        />
+                        <div className="pd-notes-footer">
+                            <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>
+                                {notes.length} caractères
+                            </span>
+                            <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>
+                                Ctrl+S pour sauvegarder
+                            </span>
+                        </div>
+                    </div>
                 </motion.div>
 
                 {/* ── Confirm Modal ── */}

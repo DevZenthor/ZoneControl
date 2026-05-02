@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  FiHome, FiUser, FiLogOut, FiMenu, FiX, FiZap
+  FiHome, FiUser, FiLogOut, FiMenu, FiX, FiZap, FiUsers
 } from 'react-icons/fi'
 import { supabase } from '../lib/supabase'
 import '../styles/navbar.css'
@@ -21,6 +21,8 @@ export default function Navbar({ session }) {
   }, [])
 
   useEffect(() => {
+    if (!session?.user?.id) return
+
     const fetchProfile = async () => {
       const { data } = await supabase
         .from('profiles')
@@ -30,7 +32,7 @@ export default function Navbar({ session }) {
       if (data) setProfile(data)
     }
     fetchProfile()
-  }, [session])
+  }, [session?.user?.id])
 
   const logout = async () => {
     await supabase.auth.signOut()
@@ -38,11 +40,15 @@ export default function Navbar({ session }) {
   }
 
   const links = [
-    { path: '/',        label: 'Home',   icon: <FiHome size={16} /> },
-    { path: '/profile', label: 'Profil', icon: <FiUser size={16} /> },
+    { path: '/',        label: 'Home',     icon: <FiHome size={16} />  },
+    { path: '/compare', label: 'Comparer', icon: <FiUsers size={16} /> },
+    { path: '/profile', label: 'Profil',   icon: <FiUser size={16} />  },
   ]
 
-  const isActive = (path) => location.pathname === path
+  const isActive = (path) => {
+    if (path === '/') return location.pathname === '/'
+    return location.pathname.startsWith(path)
+  }
 
   return (
     <>
@@ -64,7 +70,7 @@ export default function Navbar({ session }) {
             <div className="navbar-logo-icon">
               <FiZap size={16} />
             </div>
-            <span className="navbar-logo-text">ZoneControl</span>
+            <span className="navbar-logo-text">FN Tracker</span>
           </motion.div>
 
           {/* ── Links desktop ── */}
@@ -122,7 +128,7 @@ export default function Navbar({ session }) {
               <FiLogOut size={16} />
             </motion.button>
 
-            {/* Mobile menu toggle */}
+            {/* Burger mobile */}
             <motion.button
               className="navbar-burger"
               onClick={() => setMenuOpen(v => !v)}

@@ -493,3 +493,171 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 input[type="date"]::-webkit-calendar-picker-indicator:hover {
   filter: invert(1) opacity(1);
 }
+
+/* ── Period filter ── */
+.pd-period-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.pd-period-label {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.pd-period-btns {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.pd-period-btn {
+  position: relative;
+  padding: 0.35rem 0.85rem;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  overflow: hidden;
+}
+
+.pd-period-btn:hover {
+  color: var(--text-primary);
+  border-color: rgba(0, 212, 255, 0.2);
+  background: rgba(0, 212, 255, 0.04);
+}
+
+.pd-period-btn--active {
+  color: var(--accent-cyan) !important;
+  border-color: rgba(0, 212, 255, 0.35) !important;
+  background: rgba(0, 212, 255, 0.08) !important;
+}
+
+.pd-period-indicator {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple));
+  border-radius: 2px 2px 0 0;
+}
+
+.pd-period-count {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-left: auto;
+}
+
+/* ── Notes ── */
+.pd-notes-wrapper {
+  background: var(--bg-card);
+  border: var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+.pd-notes-wrapper:focus-within {
+  border-color: rgba(0, 212, 255, 0.25);
+  box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.05);
+}
+
+.pd-notes-input {
+  width: 100%;
+  padding: 1.2rem !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  color: var(--text-primary) !important;
+  font-size: 0.9rem !important;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  line-height: 1.7;
+  resize: vertical;
+  min-height: 150px;
+  transition: none;
+}
+
+.pd-notes-input:focus {
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.pd-notes-input::placeholder {
+  color: var(--text-muted) !important;
+  font-style: italic;
+}
+
+.pd-notes-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 1.2rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  background: rgba(0, 0, 0, 0.15);
+}
+
+/* ── Objectif PR ── */
+.pd-objectif {
+  background: var(--bg-card);
+  border: var(--border);
+  border-radius: var(--radius-md);
+  padding: 1.2rem 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.pd-objectif-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.8rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.pd-objectif-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pd-objectif-values {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.92rem;
+}
+
+.pd-objectif-bar-bg {
+  height: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 5px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.pd-objectif-bar-fill {
+  height: 100%;
+  border-radius: 5px;
+  box-shadow: 0 0 10px rgba(123, 47, 247, 0.4);
+}
+
+.pd-objectif-footer {
+  display: flex;
+  justify-content: space-between;
+}

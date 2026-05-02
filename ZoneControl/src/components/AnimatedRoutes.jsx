@@ -5,6 +5,9 @@ import Login from '../pages/Login'
 import Register from '../pages/Register'
 import Profile from '../pages/Profile'
 import PlayerDetail from '../pages/PlayerDetail'
+import ForgotPassword from '../pages/ForgotPassword'
+import ResetPassword from '../pages/ResetPassword'
+import Compare from '../pages/Compare'
 
 const pageVariants = {
   initial: { opacity: 0, y: 16 },
@@ -28,12 +31,14 @@ export default function AnimatedRoutes({ session }) {
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
 
+        {/* ── Home ── */}
         <Route path="/" element={
           isAuth
             ? <PageWrapper><Home session={session} /></PageWrapper>
             : <Navigate to="/login" replace />
         } />
 
+        {/* ── Auth ── */}
         <Route path="/login" element={
           isAuth
             ? <Navigate to="/" replace />
@@ -46,6 +51,15 @@ export default function AnimatedRoutes({ session }) {
             : <PageWrapper><Register /></PageWrapper>
         } />
 
+        <Route path="/forgot-password" element={
+          <PageWrapper><ForgotPassword /></PageWrapper>
+        } />
+
+        <Route path="/reset-password" element={
+          <PageWrapper><ResetPassword /></PageWrapper>
+        } />
+
+        {/* ── App ── */}
         <Route path="/player/:id" element={
           isAuth
             ? <PageWrapper><PlayerDetail session={session} /></PageWrapper>
@@ -58,6 +72,13 @@ export default function AnimatedRoutes({ session }) {
             : <Navigate to="/login" replace />
         } />
 
+        <Route path="/compare" element={
+          isAuth
+            ? <PageWrapper><Compare session={session} /></PageWrapper>
+            : <Navigate to="/login" replace />
+        } />
+
+        {/* ── Fallback ── */}
         <Route path="*" element={<Navigate to="/" replace />} />
 
       </Routes>
