@@ -9,10 +9,11 @@ import {
 import {
     FiArrowLeft, FiPlus, FiTwitter, FiBarChart2,
     FiTrash2, FiX, FiAward, FiTarget, FiStar,
-    FiCalendar, FiCheck, FiEdit2, FiSave
+    FiCalendar, FiCheck, FiEdit2, FiSave, FiAlertTriangle
 } from 'react-icons/fi'
 import { FaTrophy, FaBirthdayCake } from 'react-icons/fa'
 import { supabase } from '../lib/supabase'
+import ConfirmModal from '../components/ConfirmModal'
 import '../styles/playerdetail.css'
 
 const CustomTooltip = ({ active, payload, label }) => {
@@ -33,28 +34,29 @@ export default function PlayerDetail({ session }) {
     const { id } = useParams()
     const navigate = useNavigate()
 
-    const [player, setPlayer] = useState(null)
+    const [player, setPlayer]             = useState(null)
     const [performances, setPerformances] = useState([])
-    const [showForm, setShowForm] = useState(false)
-    const [showEdit, setShowEdit] = useState(false)
-    const [loading, setLoading] = useState(true)
-    const [saving, setSaving] = useState(false)
-    const [savingEdit, setSavingEdit] = useState(false)
-    const [error, setError] = useState('')
-    const [editSuccess, setEditSuccess] = useState(false)
+    const [showForm, setShowForm]         = useState(false)
+    const [showEdit, setShowEdit]         = useState(false)
+    const [loading, setLoading]           = useState(true)
+    const [saving, setSaving]             = useState(false)
+    const [savingEdit, setSavingEdit]     = useState(false)
+    const [error, setError]               = useState('')
+    const [editSuccess, setEditSuccess]   = useState(false)
+    const [confirmModal, setConfirmModal] = useState({ open: false, perfId: null })
 
     const [editForm, setEditForm] = useState({
         pseudo: '', age: '', team: '', pr_link: '', twitter: ''
     })
 
     const [form, setForm] = useState({
-        date: new Date().toISOString().split('T')[0],
-        event_name: '',
-        classement: '',
-        top1_count: '',
+        date:         new Date().toISOString().split('T')[0],
+        event_name:   '',
+        classement:   '',
+        top1_count:   '',
         pr_win_count: '',
-        pr_total: '',
-        region: 'EU',
+        pr_total:     '',
+        region:       'EU',
     })
 
     const REGIONS = ['EU', 'NA-East', 'NA-West', 'BR', 'OCE', 'Asia', 'ME']
@@ -67,9 +69,9 @@ export default function PlayerDetail({ session }) {
         setPlayer(p)
         if (p) {
             setEditForm({
-                pseudo: p.pseudo || '',
-                age: p.age || '',
-                team: p.team || '',
+                pseudo:  p.pseudo  || '',
+                age:     p.age     || '',
+                team:    p.team    || '',
                 pr_link: p.pr_link || '',
                 twitter: p.twitter || '',
             })
@@ -79,7 +81,7 @@ export default function PlayerDetail({ session }) {
     }
 
     useEffect(() => {
-        if (!id) return  // ← ajoute cette ligne
+        if (!id) return
         fetchAll()
     }, [id])
 
@@ -87,9 +89,9 @@ export default function PlayerDetail({ session }) {
         e.preventDefault()
         setSavingEdit(true)
         const { error } = await supabase.from('players').update({
-            pseudo: editForm.pseudo,
-            age: editForm.age ? parseInt(editForm.age) : null,
-            team: editForm.team || null,
+            pseudo:  editForm.pseudo,
+            age:     editForm.age ? parseInt(editForm.age) : null,
+            team:    editForm.team    || null,
             pr_link: editForm.pr_link || null,
             twitter: editForm.twitter || null,
         }).eq('id', id)
@@ -106,14 +108,14 @@ export default function PlayerDetail({ session }) {
         setSaving(true)
         setError('')
         const { error } = await supabase.from('performances').insert({
-            player_id: id,
-            date: form.date,
-            event_name: form.event_name || null,
-            classement: form.classement ? parseInt(form.classement) : null,
-            top1_count: form.top1_count ? parseInt(form.top1_count) : 0,
+            player_id:    id,
+            date:         form.date,
+            event_name:   form.event_name   || null,
+            classement:   form.classement   ? parseInt(form.classement)   : null,
+            top1_count:   form.top1_count   ? parseInt(form.top1_count)   : 0,
             pr_win_count: form.pr_win_count ? parseInt(form.pr_win_count) : 0,
-            pr_total: form.pr_total ? parseInt(form.pr_total) : null,
-            region: form.region,
+            pr_total:     form.pr_total     ? parseInt(form.pr_total)     : null,
+            region:       form.region,
         })
         if (error) { setError(error.message); setSaving(false); return }
         setForm({
@@ -126,25 +128,25 @@ export default function PlayerDetail({ session }) {
         setSaving(false)
     }
 
-    const deletePerf = async (perfId) => {
-        if (!confirm('Supprimer cette performance ?')) return
-        await supabase.from('performances').delete().eq('id', perfId)
-        setPerformances(prev => prev.filter(p => p.id !== perfId))
+    const deletePerf = async () => {
+        await supabase.from('performances').delete().eq('id', confirmModal.perfId)
+        setPerformances(prev => prev.filter(p => p.id !== confirmModal.perfId))
+        setConfirmModal({ open: false, perfId: null })
     }
 
-    const totalTop1 = performances.reduce((s, p) => s + (p.top1_count || 0), 0)
+    const totalTop1   = performances.reduce((s, p) => s + (p.top1_count || 0), 0)
     const totalPrWins = performances.reduce((s, p) => s + (p.pr_win_count || 0), 0)
-    const bestRank = performances.length
+    const bestRank    = performances.length
         ? Math.min(...performances.map(p => p.classement).filter(Boolean))
         : '-'
     const lastPr = [...performances].reverse().find(p => p.pr_total)?.pr_total || '-'
 
     const chartData = performances.map(p => ({
-        date: p.date,
+        date:       p.date,
         classement: p.classement,
-        top1: p.top1_count,
-        pr: p.pr_total,
-        prWin: p.pr_win_count,
+        top1:       p.top1_count,
+        pr:         p.pr_total,
+        prWin:      p.pr_win_count,
     }))
 
     if (loading) return (
@@ -161,8 +163,6 @@ export default function PlayerDetail({ session }) {
 
     return (
         <div className="pd-wrapper">
-
-
             <div className="container pd-content">
 
                 {/* ── Back ── */}
@@ -184,7 +184,6 @@ export default function PlayerDetail({ session }) {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1, duration: 0.5 }}
                 >
-                    {/* Left */}
                     <div className="pd-header-left">
                         <div className="pd-avatar">
                             {player.pseudo?.[0]?.toUpperCase()}
@@ -206,9 +205,7 @@ export default function PlayerDetail({ session }) {
                         </div>
                     </div>
 
-                    {/* Right */}
                     <div className="pd-header-right">
-                        {/* Modifier toujours visible */}
                         <motion.button
                             className="pd-edit-btn"
                             onClick={() => setShowEdit(true)}
@@ -218,7 +215,6 @@ export default function PlayerDetail({ session }) {
                             <FiEdit2 size={14} /> Modifier le joueur
                         </motion.button>
 
-                        {/* Links */}
                         <div className="pd-header-links">
                             {player.twitter && (
                                 <motion.a
@@ -280,48 +276,37 @@ export default function PlayerDetail({ session }) {
 
                                 <form onSubmit={handleEditPlayer}>
                                     <div className="row g-3">
-
                                         <div className="col-12 col-md-6">
                                             <label className="pd-label">Pseudo *</label>
                                             <input className="pd-input" type="text"
                                                 value={editForm.pseudo} required
-                                                onChange={e => setEditForm({ ...editForm, pseudo: e.target.value })}
-                                            />
+                                                onChange={e => setEditForm({ ...editForm, pseudo: e.target.value })} />
                                         </div>
-
                                         <div className="col-12 col-md-6">
                                             <label className="pd-label">Âge</label>
                                             <input className="pd-input" type="number"
                                                 value={editForm.age} placeholder="ex: 18"
-                                                onChange={e => setEditForm({ ...editForm, age: e.target.value })}
-                                            />
+                                                onChange={e => setEditForm({ ...editForm, age: e.target.value })} />
                                         </div>
-
                                         <div className="col-12 col-md-6">
                                             <label className="pd-label">Team</label>
                                             <input className="pd-input" type="text"
                                                 value={editForm.team} placeholder="Nom de la team"
-                                                onChange={e => setEditForm({ ...editForm, team: e.target.value })}
-                                            />
+                                                onChange={e => setEditForm({ ...editForm, team: e.target.value })} />
                                         </div>
-
                                         <div className="col-12 col-md-6">
                                             <label className="pd-label">Twitter (sans @)</label>
                                             <input className="pd-input" type="text"
                                                 value={editForm.twitter} placeholder="pseudo"
-                                                onChange={e => setEditForm({ ...editForm, twitter: e.target.value })}
-                                            />
+                                                onChange={e => setEditForm({ ...editForm, twitter: e.target.value })} />
                                         </div>
-
                                         <div className="col-12">
                                             <label className="pd-label">Lien PR Tracker</label>
                                             <input className="pd-input" type="url"
                                                 value={editForm.pr_link}
                                                 placeholder="https://fortnitetracker.com/profile/..."
-                                                onChange={e => setEditForm({ ...editForm, pr_link: e.target.value })}
-                                            />
+                                                onChange={e => setEditForm({ ...editForm, pr_link: e.target.value })} />
                                         </div>
-
                                     </div>
 
                                     <motion.button
@@ -330,13 +315,7 @@ export default function PlayerDetail({ session }) {
                                         disabled={savingEdit}
                                         whileHover={{ scale: 1.02 }}
                                         whileTap={{ scale: 0.97 }}
-                                        style={{
-                                            width: '100%',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            gap: '0.5rem'
-                                        }}
+                                        style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
                                     >
                                         {savingEdit
                                             ? <span className="auth-spinner" />
@@ -359,11 +338,11 @@ export default function PlayerDetail({ session }) {
                     transition={{ delay: 0.2, duration: 0.5 }}
                 >
                     {[
-                        { label: 'Tournois', value: performances.length, icon: <FiCalendar size={18} />, color: 'cyan' },
-                        { label: 'Top 1 total', value: totalTop1, icon: <FiStar size={18} />, color: 'gold' },
-                        { label: 'PR Wins', value: totalPrWins, icon: <FiTarget size={18} />, color: 'purple' },
-                        { label: 'Meilleur classement', value: bestRank, icon: <FiAward size={18} />, color: 'pink' },
-                        { label: 'PR actuel', value: lastPr, icon: <FiBarChart2 size={18} />, color: 'cyan' },
+                        { label: 'Tournois',            value: performances.length, icon: <FiCalendar size={18} />,  color: 'cyan'   },
+                        { label: 'Top 1 total',         value: totalTop1,           icon: <FiStar size={18} />,      color: 'gold'   },
+                        { label: 'PR Wins',             value: totalPrWins,         icon: <FiTarget size={18} />,    color: 'purple' },
+                        { label: 'Meilleur classement', value: bestRank,            icon: <FiAward size={18} />,     color: 'pink'   },
+                        { label: 'PR actuel',           value: lastPr,              icon: <FiBarChart2 size={18} />, color: 'cyan'   },
                     ].map((s, i) => (
                         <motion.div
                             key={i}
@@ -398,12 +377,10 @@ export default function PlayerDetail({ session }) {
                                     <XAxis dataKey="date" tick={{ fill: '#8888aa', fontSize: 11 }} tickLine={false} />
                                     <YAxis reversed tick={{ fill: '#8888aa', fontSize: 11 }} tickLine={false} axisLine={false} />
                                     <Tooltip content={<CustomTooltip />} />
-                                    <Line
-                                        type="monotone" dataKey="classement" name="Classement"
+                                    <Line type="monotone" dataKey="classement" name="Classement"
                                         stroke="#00d4ff" strokeWidth={2.5}
                                         dot={{ fill: '#00d4ff', r: 4, strokeWidth: 0 }}
-                                        activeDot={{ r: 6, fill: '#00d4ff' }}
-                                    />
+                                        activeDot={{ r: 6, fill: '#00d4ff' }} />
                                 </LineChart>
                             </ResponsiveContainer>
                         </div>
@@ -419,12 +396,10 @@ export default function PlayerDetail({ session }) {
                                         <XAxis dataKey="date" tick={{ fill: '#8888aa', fontSize: 11 }} tickLine={false} />
                                         <YAxis tick={{ fill: '#8888aa', fontSize: 11 }} tickLine={false} axisLine={false} />
                                         <Tooltip content={<CustomTooltip />} />
-                                        <Line
-                                            type="monotone" dataKey="pr" name="PR Total"
+                                        <Line type="monotone" dataKey="pr" name="PR Total"
                                             stroke="#7b2ff7" strokeWidth={2.5}
                                             dot={{ fill: '#7b2ff7', r: 4, strokeWidth: 0 }}
-                                            activeDot={{ r: 6, fill: '#7b2ff7' }}
-                                        />
+                                            activeDot={{ r: 6, fill: '#7b2ff7' }} />
                                     </LineChart>
                                 </ResponsiveContainer>
                             </div>
@@ -441,7 +416,7 @@ export default function PlayerDetail({ session }) {
                                     <YAxis tick={{ fill: '#8888aa', fontSize: 11 }} tickLine={false} axisLine={false} />
                                     <Tooltip content={<CustomTooltip />} />
                                     <Legend wrapperStyle={{ fontSize: '0.8rem', color: '#8888aa' }} />
-                                    <Bar dataKey="top1" name="Top 1" fill="#ffd700" radius={[4, 4, 0, 0]} />
+                                    <Bar dataKey="top1"  name="Top 1"   fill="#ffd700" radius={[4, 4, 0, 0]} />
                                     <Bar dataKey="prWin" name="PR Wins" fill="#7b2ff7" radius={[4, 4, 0, 0]} />
                                 </BarChart>
                             </ResponsiveContainer>
@@ -485,14 +460,12 @@ export default function PlayerDetail({ session }) {
                                 <div className="pd-form-card">
                                     <form onSubmit={handleAddPerf}>
                                         <div className="row g-3">
-
                                             <div className="col-12 col-md-4">
                                                 <label className="pd-label">Date</label>
                                                 <input className="pd-input" type="date"
                                                     value={form.date}
                                                     onChange={e => setForm({ ...form, date: e.target.value })} required />
                                             </div>
-
                                             <div className="col-12 col-md-4">
                                                 <label className="pd-label">Nom de l'event</label>
                                                 <input className="pd-input" type="text"
@@ -500,7 +473,6 @@ export default function PlayerDetail({ session }) {
                                                     value={form.event_name}
                                                     onChange={e => setForm({ ...form, event_name: e.target.value })} />
                                             </div>
-
                                             <div className="col-12 col-md-4">
                                                 <label className="pd-label">Région</label>
                                                 <select className="pd-input" value={form.region}
@@ -508,35 +480,30 @@ export default function PlayerDetail({ session }) {
                                                     {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
                                                 </select>
                                             </div>
-
                                             <div className="col-6 col-md-3">
                                                 <label className="pd-label">Classement</label>
                                                 <input className="pd-input" type="number" min="1"
                                                     placeholder="ex: 12" value={form.classement}
                                                     onChange={e => setForm({ ...form, classement: e.target.value })} />
                                             </div>
-
                                             <div className="col-6 col-md-3">
                                                 <label className="pd-label">Top 1</label>
                                                 <input className="pd-input" type="number" min="0"
                                                     placeholder="0" value={form.top1_count}
                                                     onChange={e => setForm({ ...form, top1_count: e.target.value })} />
                                             </div>
-
                                             <div className="col-6 col-md-3">
                                                 <label className="pd-label">PR Wins</label>
                                                 <input className="pd-input" type="number" min="0"
                                                     placeholder="0" value={form.pr_win_count}
                                                     onChange={e => setForm({ ...form, pr_win_count: e.target.value })} />
                                             </div>
-
                                             <div className="col-6 col-md-3">
                                                 <label className="pd-label">PR Total</label>
                                                 <input className="pd-input" type="number" min="0"
                                                     placeholder="ex: 4200" value={form.pr_total}
                                                     onChange={e => setForm({ ...form, pr_total: e.target.value })} />
                                             </div>
-
                                         </div>
 
                                         {error && <div className="alert-fn mt-3">{error}</div>}
@@ -612,7 +579,7 @@ export default function PlayerDetail({ session }) {
                                                 <td>
                                                     <motion.button
                                                         className="pd-delete-btn"
-                                                        onClick={() => deletePerf(perf.id)}
+                                                        onClick={() => setConfirmModal({ open: true, perfId: perf.id })}
                                                         whileHover={{ scale: 1.15 }}
                                                         whileTap={{ scale: 0.9 }}
                                                     >
@@ -627,6 +594,15 @@ export default function PlayerDetail({ session }) {
                         </motion.div>
                     )}
                 </motion.div>
+
+                {/* ── Confirm Modal ── */}
+                <ConfirmModal
+                    isOpen={confirmModal.open}
+                    title="Supprimer la performance ?"
+                    message="Cette performance sera définitivement supprimée. Tu ne pourras pas la récupérer."
+                    onConfirm={deletePerf}
+                    onCancel={() => setConfirmModal({ open: false, perfId: null })}
+                />
 
             </div>
         </div>
