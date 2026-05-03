@@ -1,13 +1,17 @@
+import { lazy, Suspense } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import Home from '../pages/Home'
-import Login from '../pages/Login'
-import Register from '../pages/Register'
-import Profile from '../pages/Profile'
-import PlayerDetail from '../pages/PlayerDetail'
-import ForgotPassword from '../pages/ForgotPassword'
-import ResetPassword from '../pages/ResetPassword'
-import Compare from '../pages/Compare'
+
+// ── Lazy pages ──
+const Home           = lazy(() => import('../pages/Home'))
+const Login          = lazy(() => import('../pages/Login'))
+const Register       = lazy(() => import('../pages/Register'))
+const Profile        = lazy(() => import('../pages/Profile'))
+const PlayerDetail   = lazy(() => import('../pages/PlayerDetail'))
+const ForgotPassword = lazy(() => import('../pages/ForgotPassword'))
+const ResetPassword  = lazy(() => import('../pages/ResetPassword'))
+const Compare        = lazy(() => import('../pages/Compare'))
+const NotFound       = lazy(() => import('../pages/NotFound'))
 
 const pageVariants = {
   initial: { opacity: 0, y: 16 },
@@ -15,10 +19,25 @@ const pageVariants = {
   exit:    { opacity: 0, y: -10, transition: { duration: 0.2 } },
 }
 
+function PageLoader() {
+  return (
+    <div style={{
+      height: '80vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+    }}>
+      <div className="spinner-fn" />
+    </div>
+  )
+}
+
 function PageWrapper({ children }) {
   return (
     <motion.div variants={pageVariants} initial="initial" animate="animate" exit="exit">
-      {children}
+      <Suspense fallback={<PageLoader />}>
+        {children}
+      </Suspense>
     </motion.div>
   )
 }
@@ -31,14 +50,12 @@ export default function AnimatedRoutes({ session }) {
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
 
-        {/* ── Home ── */}
         <Route path="/" element={
           isAuth
             ? <PageWrapper><Home session={session} /></PageWrapper>
             : <Navigate to="/login" replace />
         } />
 
-        {/* ── Auth ── */}
         <Route path="/login" element={
           isAuth
             ? <Navigate to="/" replace />
@@ -59,7 +76,6 @@ export default function AnimatedRoutes({ session }) {
           <PageWrapper><ResetPassword /></PageWrapper>
         } />
 
-        {/* ── App ── */}
         <Route path="/player/:id" element={
           isAuth
             ? <PageWrapper><PlayerDetail session={session} /></PageWrapper>
@@ -78,8 +94,10 @@ export default function AnimatedRoutes({ session }) {
             : <Navigate to="/login" replace />
         } />
 
-        {/* ── Fallback ── */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        {/* 404 */}
+        <Route path="*" element={
+          <PageWrapper><NotFound /></PageWrapper>
+        } />
 
       </Routes>
     </AnimatePresence>

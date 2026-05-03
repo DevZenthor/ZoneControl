@@ -2,23 +2,26 @@ import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   FiUser, FiMail, FiLock, FiCamera, FiSave,
-  FiCheck, FiAlertCircle, FiEye, FiEyeOff
+  FiEye, FiEyeOff
 } from 'react-icons/fi'
 import { supabase } from '../lib/supabase'
 import { useToastContext } from '../context/ToastContext'
+import { SkeletonProfileCard } from '../components/SkeletonCard'
 import '../styles/profile.css'
 
 export default function Profile({ session }) {
-  const [profile, setProfile]           = useState(null)
-  const [pseudo, setPseudo]             = useState('')
-  const [email, setEmail]               = useState('')
-  const [newPassword, setNewPassword]   = useState('')
-  const [showPass, setShowPass]         = useState(false)
-  const [avatarUrl, setAvatarUrl]       = useState(null)
-  const [uploading, setUploading]       = useState(false)
-  const [saving, setSaving]             = useState(false)
+  const [profile, setProfile]         = useState(null)
+  const [pseudo, setPseudo]           = useState('')
+  const [email, setEmail]             = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [showPass, setShowPass]       = useState(false)
+  const [avatarUrl, setAvatarUrl]     = useState(null)
+  const [uploading, setUploading]     = useState(false)
+  const [saving, setSaving]           = useState(false)
+  const [loading, setLoading]         = useState(true)
   const fileRef = useRef()
   const toast = useToastContext()
+ 
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -33,6 +36,7 @@ export default function Profile({ session }) {
         setAvatarUrl(data.avatar_url || null)
       }
       setEmail(session.user.email || '')
+      setLoading(false)
     }
     fetchProfile()
   }, [session])
@@ -48,11 +52,7 @@ export default function Profile({ session }) {
       .from('avatars')
       .upload(filePath, file, { upsert: true })
 
-    if (upErr) {
-      toast.error(upErr.message)
-      setUploading(false)
-      return
-    }
+    if (upErr) { toast.error(upErr.message); setUploading(false); return }
 
     const { data: { publicUrl } } = supabase.storage
       .from('avatars')
@@ -76,19 +76,11 @@ export default function Profile({ session }) {
       .update({ pseudo })
       .eq('id', session.user.id)
 
-    if (profileErr) {
-      toast.error(profileErr.message)
-      setSaving(false)
-      return
-    }
+    if (profileErr) { toast.error(profileErr.message); setSaving(false); return }
 
     if (email !== session.user.email) {
       const { error: emailErr } = await supabase.auth.updateUser({ email })
-      if (emailErr) {
-        toast.error(emailErr.message)
-        setSaving(false)
-        return
-      }
+      if (emailErr) { toast.error(emailErr.message); setSaving(false); return }
     }
 
     if (newPassword) {
@@ -98,11 +90,7 @@ export default function Profile({ session }) {
         return
       }
       const { error: passErr } = await supabase.auth.updateUser({ password: newPassword })
-      if (passErr) {
-        toast.error(passErr.message)
-        setSaving(false)
-        return
-      }
+      if (passErr) { toast.error(passErr.message); setSaving(false); return }
       setNewPassword('')
     }
 
@@ -111,6 +99,56 @@ export default function Profile({ session }) {
   }
 
   const initials = (pseudo || email)?.[0]?.toUpperCase() || '?'
+
+  // ── Skeleton ──
+  if (loading) return (
+    <div className="container" style={{ padding: '3rem 0' }}>
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        style={{ marginBottom: '2.5rem' }}
+      >
+        <motion.div
+          animate={{ opacity: [0.4, 0.8, 0.4] }}
+          transition={{ duration: 1.5, repeat: Infinity }}
+          style={{ width: 200, height: 32, borderRadius: 8, background: 'rgba(255,255,255,0.06)', marginBottom: '0.5rem' }}
+        />
+        <motion.div
+          animate={{ opacity: [0.4, 0.8, 0.4] }}
+          transition={{ duration: 1.5, repeat: Infinity }}
+          style={{ width: 280, height: 14, borderRadius: 4, background: 'rgba(255,255,255,0.04)' }}
+        />
+      </motion.div>
+
+      <div className="profile-grid">
+        <SkeletonProfileCard />
+        <div style={{
+          background: 'rgba(19,19,31,0.85)',
+          border: '1px solid rgba(255,255,255,0.07)',
+          borderRadius: 16,
+          padding: '2rem',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1.2rem',
+        }}>
+          {Array(3).fill(0).map((_, i) => (
+            <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+              <motion.div
+                animate={{ opacity: [0.4, 0.8, 0.4] }}
+                transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.1 }}
+                style={{ width: '30%', height: 10, borderRadius: 4, background: 'rgba(255,255,255,0.05)' }}
+              />
+              <motion.div
+                animate={{ opacity: [0.4, 0.8, 0.4] }}
+                transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.1 }}
+                style={{ width: '100%', height: 42, borderRadius: 8, background: 'rgba(255,255,255,0.04)' }}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
 
   return (
     <div className="profile-wrapper">

@@ -12,17 +12,19 @@ import StatutBadge from '../components/StatutBadge'
 import ConfirmModal from '../components/ConfirmModal'
 import { STATUT_COLORS } from '../lib/statut'
 import { useToastContext } from '../context/ToastContext'
+import { SkeletonPlayerCard, SkeletonStatPill } from '../components/SkeletonCard'
 import '../styles/home.css'
 
 export default function Home({ session }) {
-  const [players, setPlayers]           = useState([])
-  const [loading, setLoading]           = useState(true)
-  const [showForm, setShowForm]         = useState(false)
-  const [search, setSearch]             = useState('')
-  const [filterStatut, setFilterStatut] = useState('Tous')
+  const [players, setPlayers]             = useState([])
+  const [loading, setLoading]             = useState(true)
+  const [showForm, setShowForm]           = useState(false)
+  const [search, setSearch]               = useState('')
+  const [filterStatut, setFilterStatut]   = useState('Tous')
   const [confirmDelete, setConfirmDelete] = useState({ open: false, playerId: null, pseudo: '' })
   const navigate = useNavigate()
   const toast = useToastContext()
+
 
   const fetchPlayers = async () => {
     const { data } = await supabase
@@ -62,7 +64,7 @@ export default function Home({ session }) {
         >
           <h1 className="home-title">Mes Joueurs</h1>
           <p className="home-subtitle">
-            {players.length} joueur{players.length !== 1 ? 's' : ''} suivi{players.length !== 1 ? 's' : ''}
+            {loading ? 'Chargement...' : `${players.length} joueur${players.length !== 1 ? 's' : ''} suivi${players.length !== 1 ? 's' : ''}`}
           </p>
         </motion.div>
 
@@ -163,9 +165,32 @@ export default function Home({ session }) {
 
         {/* ── Content ── */}
         {loading ? (
-          <div className="home-loader">
-            <div className="spinner-fn" />
-          </div>
+          <>
+            <motion.div
+              className="player-grid"
+              initial="hidden"
+              animate="visible"
+              variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.06 } } }}
+            >
+              {Array(6).fill(0).map((_, i) => (
+                <motion.div
+                  key={i}
+                  variants={{
+                    hidden:   { opacity: 0, y: 20 },
+                    visible:  { opacity: 1, y: 0, transition: { duration: 0.4 } }
+                  }}
+                >
+                  <SkeletonPlayerCard />
+                </motion.div>
+              ))}
+            </motion.div>
+
+            <div className="home-stats" style={{ marginTop: '3rem' }}>
+              {Array(4).fill(0).map((_, i) => (
+                <SkeletonStatPill key={i} />
+              ))}
+            </div>
+          </>
 
         ) : filtered.length === 0 ? (
           <motion.div
@@ -204,10 +229,7 @@ export default function Home({ session }) {
             className="player-grid"
             initial="hidden"
             animate="visible"
-            variants={{
-              hidden: {},
-              visible: { transition: { staggerChildren: 0.07 } }
-            }}
+            variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.07 } } }}
           >
             <AnimatePresence>
               {filtered.map(player => (
@@ -239,12 +261,9 @@ export default function Home({ session }) {
                     <div className="player-card-name">{player.pseudo}</div>
 
                     <div className="player-card-info">
-
-                      {/* Statut */}
                       <div className="player-card-row">
                         <StatutBadge statut={player.statut || 'Actif'} />
                       </div>
-
                       {player.age && (
                         <div className="player-card-row">
                           <FaBirthdayCake size={13} style={{ color: 'var(--accent-purple)', flexShrink: 0 }} />
@@ -321,7 +340,7 @@ export default function Home({ session }) {
           </motion.div>
         )}
 
-        {/* ── Confirm delete joueur ── */}
+        {/* ── Confirm delete ── */}
         <ConfirmModal
           isOpen={confirmDelete.open}
           title={`Supprimer ${confirmDelete.pseudo} ?`}

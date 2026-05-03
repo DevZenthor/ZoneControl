@@ -281,3 +281,29 @@
 @media (max-width: 480px) {
   .navbar-profile { padding: 0.3rem; }
 }
+
+/* ── Install btn ── */
+.navbar-install-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(0, 212, 255, 0.25);
+  background: rgba(0, 212, 255, 0.06);
+  color: var(--accent-cyan);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.navbar-install-btn:hover {
+  background: rgba(0, 212, 255, 0.12);
+  box-shadow: 0 0 15px rgba(0, 212, 255, 0.15);
+}
+
+@media (max-width: 768px) {
+  .navbar-install-label { display: none; }
+  .navbar-install-btn   { padding: 0.4rem; }
+}

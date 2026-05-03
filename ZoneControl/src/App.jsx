@@ -1,24 +1,23 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, lazy, Suspense } from 'react'
 import { BrowserRouter } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { supabase } from './lib/supabase'
 import Navbar from './components/Navbar'
-import AnimatedRoutes from './components/AnimatedRoutes'
 import AnimatedBackground from './components/AnimatedBackground'
+
+// ── Lazy imports ──
+const AnimatedRoutes = lazy(() => import('./components/AnimatedRoutes'))
 
 export default function App() {
   const [session, setSession] = useState(undefined)
 
   useEffect(() => {
-    // Récupère la session existante
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session ?? null)
     })
 
-    // Écoute les changements d'auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        console.log('Auth event:', event, session) // debug
+      (_event, session) => {
         setSession(session ?? null)
       }
     )
@@ -26,7 +25,6 @@ export default function App() {
     return () => subscription.unsubscribe()
   }, [])
 
-  // Chargement
   if (session === undefined) return (
     <div style={{
       height: '100vh',
@@ -62,7 +60,18 @@ export default function App() {
     <BrowserRouter>
       <AnimatedBackground />
       {session && <Navbar session={session} />}
-      <AnimatedRoutes session={session} />
+      <Suspense fallback={
+        <div style={{
+          height: '80vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+          <div className="spinner-fn" />
+        </div>
+      }>
+        <AnimatedRoutes session={session} />
+      </Suspense>
     </BrowserRouter>
   )
 }
