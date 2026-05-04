@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useDragControls } from 'framer-motion'
 import {
     LineChart, Line, BarChart, Bar,
     XAxis, YAxis, CartesianGrid, Tooltip,
@@ -50,6 +50,8 @@ export default function PlayerDetail({ session }) {
     const { id } = useParams()
     const navigate = useNavigate()
     const toast = useToastContext()
+    const dragControls1 = useDragControls()
+    const dragControls2 = useDragControls()
 
     const [player, setPlayer]               = useState(null)
     const [performances, setPerformances]   = useState([])
@@ -70,8 +72,6 @@ export default function PlayerDetail({ session }) {
     const [lastKnownPr, setLastKnownPr]     = useState(0)
     const [period, setPeriod]               = useState(null)
     const [notes, setNotes]                 = useState('')
-
-
 
     const [editForm, setEditForm] = useState({
         pseudo: '', age: '', team: '', pr_link: '', twitter: '',
@@ -241,54 +241,30 @@ export default function PlayerDetail({ session }) {
     const bestRank    = performances.length ? Math.min(...performances.map(p => p.classement).filter(Boolean)) : '-'
     const lastPr      = [...performances].reverse().find(p => p.pr_total)?.pr_total || '-'
 
-    // ── Skeleton ──
     if (loading) return (
         <div className="container" style={{ padding: '2rem 0 5rem' }}>
-
-            {/* Back */}
-            <motion.div
-                animate={{ opacity: [0.4, 0.8, 0.4] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
-                style={{ width: 80, height: 14, borderRadius: 4, background: 'rgba(255,255,255,0.05)', marginBottom: '1.5rem' }}
-            />
-
-            {/* Header */}
+            <motion.div animate={{ opacity: [0.4, 0.8, 0.4] }} transition={{ duration: 1.5, repeat: Infinity }}
+                style={{ width: 80, height: 14, borderRadius: 4, background: 'rgba(255,255,255,0.05)', marginBottom: '1.5rem' }} />
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
-                <motion.div
-                    animate={{ opacity: [0.4, 0.8, 0.4] }}
-                    transition={{ duration: 1.5, repeat: Infinity }}
-                    style={{ width: 64, height: 64, borderRadius: 16, background: 'rgba(255,255,255,0.06)', flexShrink: 0 }}
-                />
+                <motion.div animate={{ opacity: [0.4, 0.8, 0.4] }} transition={{ duration: 1.5, repeat: Infinity }}
+                    style={{ width: 64, height: 64, borderRadius: 16, background: 'rgba(255,255,255,0.06)', flexShrink: 0 }} />
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
-                    <motion.div
-                        animate={{ opacity: [0.4, 0.8, 0.4] }}
-                        transition={{ duration: 1.5, repeat: Infinity }}
-                        style={{ width: '40%', height: 26, borderRadius: 6, background: 'rgba(255,255,255,0.07)' }}
-                    />
+                    <motion.div animate={{ opacity: [0.4, 0.8, 0.4] }} transition={{ duration: 1.5, repeat: Infinity }}
+                        style={{ width: '40%', height: 26, borderRadius: 6, background: 'rgba(255,255,255,0.07)' }} />
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
                         {Array(3).fill(0).map((_, i) => (
-                            <motion.div key={i}
-                                animate={{ opacity: [0.4, 0.8, 0.4] }}
-                                transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.1 }}
-                                style={{ width: 70, height: 22, borderRadius: 20, background: 'rgba(255,255,255,0.05)' }}
-                            />
+                            <motion.div key={i} animate={{ opacity: [0.4, 0.8, 0.4] }} transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.1 }}
+                                style={{ width: 70, height: 22, borderRadius: 20, background: 'rgba(255,255,255,0.05)' }} />
                         ))}
                     </div>
                 </div>
             </div>
-
-            {/* Stats */}
             <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap', marginBottom: '2rem' }}>
                 {Array(5).fill(0).map((_, i) => <SkeletonStatPill key={i} />)}
             </div>
-
-            {/* Charts */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '2rem' }}>
-                <SkeletonChart />
-                <SkeletonChart />
+                <SkeletonChart /><SkeletonChart />
             </div>
-
-            {/* Table */}
             <SkeletonTable />
         </div>
     )
@@ -304,24 +280,14 @@ export default function PlayerDetail({ session }) {
             <div className="container pd-content">
 
                 {/* ── Back ── */}
-                <motion.button
-                    className="pd-back"
-                    onClick={() => navigate('/')}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    whileHover={{ x: -4 }}
-                    whileTap={{ scale: 0.95 }}
-                >
+                <motion.button className="pd-back" onClick={() => navigate('/')}
+                    initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
+                    whileHover={{ x: -4 }} whileTap={{ scale: 0.95 }}>
                     <FiArrowLeft size={16} /> Retour
                 </motion.button>
 
                 {/* ── Header ── */}
-                <motion.div
-                    className="pd-header"
-                    initial={{ opacity: 0, y: -24 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1, duration: 0.5 }}
-                >
+                <motion.div className="pd-header" initial={{ opacity: 0, y: -24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.5 }}>
                     <div className="pd-header-left">
                         <div className="pd-avatar">{player.pseudo?.[0]?.toUpperCase()}</div>
                         <div>
@@ -333,7 +299,6 @@ export default function PlayerDetail({ session }) {
                             </div>
                         </div>
                     </div>
-
                     <div className="pd-header-right">
                         <motion.button className="pd-edit-btn" onClick={() => setShowEdit(true)} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                             <FiEdit2 size={14} /> Modifier le joueur
@@ -360,10 +325,24 @@ export default function PlayerDetail({ session }) {
                     {showEdit && (
                         <>
                             <motion.div className="pd-modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowEdit(false)} />
-                            <motion.div className="pd-modal" initial={{ opacity: 0, scale: 0.92, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.92, y: 20 }} transition={{ duration: 0.25, ease: 'easeOut' }}>
-                                <div className="pd-modal-header">
+                            <motion.div
+                                className="pd-modal"
+                                drag
+                                dragControls={dragControls1}
+                                dragMomentum={false}
+                                dragElastic={0}
+                                initial={{ opacity: 0, scale: 0.92, y: 20 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.92, y: 20 }}
+                                transition={{ duration: 0.25, ease: 'easeOut' }}
+                                style={{ cursor: 'default' }}
+                            >
+                                <div className="pd-modal-header" onPointerDown={(e) => dragControls1.start(e)}>
                                     <h3 className="pd-modal-title"><FiEdit2 size={16} /> Modifier le joueur</h3>
-                                    <motion.button className="pd-modal-close" onClick={() => setShowEdit(false)} whileHover={{ scale: 1.1, rotate: 90 }} whileTap={{ scale: 0.9 }}><FiX size={16} /></motion.button>
+                                    <motion.button className="pd-modal-close" onClick={() => setShowEdit(false)}
+                                        whileHover={{ scale: 1.1, rotate: 90 }} whileTap={{ scale: 0.9 }}>
+                                        <FiX size={16} />
+                                    </motion.button>
                                 </div>
                                 <form onSubmit={handleEditPlayer}>
                                     <div className="row g-3">
@@ -409,7 +388,8 @@ export default function PlayerDetail({ session }) {
                                             </div>
                                         </div>
                                     </div>
-                                    <motion.button className="btn-accent mt-3" type="submit" disabled={savingEdit} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+                                    <motion.button className="btn-accent mt-3" type="submit" disabled={savingEdit}
+                                        whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
                                         style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
                                         {savingEdit ? <span className="auth-spinner" /> : editSuccess ? <><FiCheck size={15} /> Sauvegardé !</> : <><FiSave size={15} /> Sauvegarder</>}
                                     </motion.button>
@@ -424,10 +404,24 @@ export default function PlayerDetail({ session }) {
                     {editPerfId && (
                         <>
                             <motion.div className="pd-modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setEditPerfId(null)} />
-                            <motion.div className="pd-modal" style={{ maxWidth: 600 }} initial={{ opacity: 0, scale: 0.92, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.92, y: 20 }} transition={{ duration: 0.25, ease: 'easeOut' }}>
-                                <div className="pd-modal-header">
+                            <motion.div
+                                className="pd-modal"
+                                drag
+                                dragControls={dragControls2}
+                                dragMomentum={false}
+                                dragElastic={0}
+                                style={{ maxWidth: 600, cursor: 'default' }}
+                                initial={{ opacity: 0, scale: 0.92, y: 20 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.92, y: 20 }}
+                                transition={{ duration: 0.25, ease: 'easeOut' }}
+                            >
+                                <div className="pd-modal-header" onPointerDown={(e) => dragControls2.start(e)}>
                                     <h3 className="pd-modal-title"><FiEdit2 size={16} /> Modifier la performance</h3>
-                                    <motion.button className="pd-modal-close" onClick={() => setEditPerfId(null)} whileHover={{ scale: 1.1, rotate: 90 }} whileTap={{ scale: 0.9 }}><FiX size={16} /></motion.button>
+                                    <motion.button className="pd-modal-close" onClick={() => setEditPerfId(null)}
+                                        whileHover={{ scale: 1.1, rotate: 90 }} whileTap={{ scale: 0.9 }}>
+                                        <FiX size={16} />
+                                    </motion.button>
                                 </div>
                                 <form onSubmit={handleEditPerf}>
                                     <div className="row g-3">
@@ -463,7 +457,8 @@ export default function PlayerDetail({ session }) {
                                         </div>
                                     </div>
                                     {editPerfError && <div className="alert-fn mt-3">{editPerfError}</div>}
-                                    <motion.button className="btn-accent mt-3" type="submit" disabled={savingPerf} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+                                    <motion.button className="btn-accent mt-3" type="submit" disabled={savingPerf}
+                                        whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
                                         style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
                                         {savingPerf ? <span className="auth-spinner" /> : <><FiSave size={15} /> Sauvegarder la performance</>}
                                     </motion.button>
@@ -575,7 +570,6 @@ export default function PlayerDetail({ session }) {
                                         </LineChart>
                                     </ResponsiveContainer>
                                 </div>
-
                                 {chartData.some(d => d.pr) && (
                                     <div className="pd-chart-card">
                                         <h3 className="pd-chart-title"><FiStar size={15} /> Évolution PR</h3>
@@ -590,7 +584,6 @@ export default function PlayerDetail({ session }) {
                                         </ResponsiveContainer>
                                     </div>
                                 )}
-
                                 <div className="pd-chart-card pd-chart-card--full">
                                     <h3 className="pd-chart-title"><FiAward size={15} /> Top 1 & PR Wins par tournoi</h3>
                                     <ResponsiveContainer width="100%" height={220}>
@@ -670,7 +663,8 @@ export default function PlayerDetail({ session }) {
                                             </div>
                                         </div>
                                         {error && <div className="alert-fn mt-3">{error}</div>}
-                                        <motion.button className="btn-accent mt-3" type="submit" disabled={saving} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+                                        <motion.button className="btn-accent mt-3" type="submit" disabled={saving}
+                                            whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
                                             style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                                             {saving ? <span className="auth-spinner" /> : <><FiCheck size={15} /> Enregistrer</>}
                                         </motion.button>
@@ -749,7 +743,6 @@ export default function PlayerDetail({ session }) {
                     </div>
                 </motion.div>
 
-                {/* ── Confirm Modal ── */}
                 <ConfirmModal
                     isOpen={confirmModal.open}
                     title="Supprimer la performance ?"

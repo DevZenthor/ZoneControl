@@ -27,7 +27,6 @@
   margin-bottom: 1.5rem;
   transition: color 0.2s;
 }
-
 .pd-back:hover { color: var(--accent-cyan); }
 
 /* ── Header ── */
@@ -125,7 +124,6 @@
   transition: all 0.2s;
   white-space: nowrap;
 }
-
 .pd-edit-btn:hover {
   background: rgba(0, 212, 255, 0.12);
   border-color: rgba(0, 212, 255, 0.4);
@@ -150,7 +148,6 @@
   border: 1px solid rgba(29, 161, 242, 0.25);
   color: #1da1f2;
 }
-
 .pd-link--twitter:hover {
   background: rgba(29, 161, 242, 0.15);
   box-shadow: 0 0 15px rgba(29, 161, 242, 0.2);
@@ -162,7 +159,6 @@
   border: 1px solid rgba(123, 47, 247, 0.25);
   color: var(--accent-purple);
 }
-
 .pd-link--pr:hover {
   background: rgba(123, 47, 247, 0.15);
   box-shadow: 0 0 15px rgba(123, 47, 247, 0.2);
@@ -186,6 +182,8 @@
   transform: translate(-50%, -50%);
   width: 90%;
   max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
   background: rgba(19, 19, 31, 0.98);
   border: 1px solid rgba(0, 212, 255, 0.15);
   border-radius: var(--radius-lg);
@@ -195,11 +193,35 @@
               0 0 0 1px rgba(123, 47, 247, 0.1);
 }
 
+.pd-modal::-webkit-scrollbar { width: 4px; }
+.pd-modal::-webkit-scrollbar-track { background: transparent; }
+.pd-modal::-webkit-scrollbar-thumb {
+  background: rgba(123, 47, 247, 0.4);
+  border-radius: 2px;
+}
+
+/* ── Modal header — drag handle ── */
 .pd-modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 1.5rem;
+  cursor: grab;
+  user-select: none;
+}
+
+.pd-modal-header:active { cursor: grabbing; }
+
+.pd-modal-header::before {
+  content: '';
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 36px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
 }
 
 .pd-modal-title {
@@ -224,8 +246,8 @@
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
+  flex-shrink: 0;
 }
-
 .pd-modal-close:hover {
   color: var(--accent-pink);
   border-color: rgba(255, 45, 120, 0.3);
@@ -434,13 +456,10 @@
 }
 
 .pd-table tr:last-child td { border-bottom: none; }
+.pd-table tbody tr:hover td { background: rgba(0, 212, 255, 0.02); }
 
-.pd-table tbody tr:hover td {
-  background: rgba(0, 212, 255, 0.02);
-}
-
-.pd-rank  { font-weight: 700; color: var(--accent-cyan); }
-.pd-top1  { color: var(--accent-gold); font-weight: 700; }
+.pd-rank { font-weight: 700; color: var(--accent-cyan); }
+.pd-top1 { color: var(--accent-gold); font-weight: 700; }
 
 .pd-region-badge {
   background: rgba(123, 47, 247, 0.1);
@@ -463,33 +482,33 @@
   align-items: center;
   transition: color 0.2s, background 0.2s;
 }
-
 .pd-delete-btn:hover {
   color: var(--accent-pink);
   background: rgba(255, 45, 120, 0.1);
 }
 
-/* ── Responsive ── */
-@media (max-width: 768px) {
-  .pd-charts         { grid-template-columns: 1fr; }
-  .pd-chart-card--full { grid-column: 1; }
-  .pd-header         { flex-direction: column; align-items: flex-start; }
-  .pd-header-right   { align-items: flex-start; }
-  .pd-stats          { gap: 0.5rem; }
-  .pd-stat           { min-width: 90px; padding: 0.7rem; }
-  .pd-stat-value     { font-size: 1.1rem; }
+/* ── Edit perf button ── */
+.pd-edit-perf-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  transition: color 0.2s, background 0.2s;
+}
+.pd-edit-perf-btn:hover {
+  color: var(--accent-cyan);
+  background: rgba(0, 212, 255, 0.1);
 }
 
-@media (max-width: 480px) {
-  .pd-stats { display: grid; grid-template-columns: 1fr 1fr; }
-}
-
-/* ── Date input calendar icon ── */
+/* ── Date input ── */
 input[type="date"]::-webkit-calendar-picker-indicator {
   filter: invert(1) opacity(0.5);
   cursor: pointer;
 }
-
 input[type="date"]::-webkit-calendar-picker-indicator:hover {
   filter: invert(1) opacity(1);
 }
@@ -515,10 +534,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   white-space: nowrap;
 }
 
-.pd-period-btns {
-  display: flex;
-  gap: 0.3rem;
-}
+.pd-period-btns { display: flex; gap: 0.3rem; }
 
 .pd-period-btn {
   position: relative;
@@ -533,13 +549,11 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   transition: all 0.2s;
   overflow: hidden;
 }
-
 .pd-period-btn:hover {
   color: var(--text-primary);
   border-color: rgba(0, 212, 255, 0.2);
   background: rgba(0, 212, 255, 0.04);
 }
-
 .pd-period-btn--active {
   color: var(--accent-cyan) !important;
   border-color: rgba(0, 212, 255, 0.35) !important;
@@ -548,9 +562,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 
 .pd-period-indicator {
   position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  bottom: 0; left: 0; right: 0;
   height: 2px;
   background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple));
   border-radius: 2px 2px 0 0;
@@ -570,7 +582,6 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   overflow: hidden;
   transition: border-color 0.2s;
 }
-
 .pd-notes-wrapper:focus-within {
   border-color: rgba(0, 212, 255, 0.25);
   box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.05);
@@ -590,16 +601,8 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   min-height: 150px;
   transition: none;
 }
-
-.pd-notes-input:focus {
-  box-shadow: none !important;
-  outline: none !important;
-}
-
-.pd-notes-input::placeholder {
-  color: var(--text-muted) !important;
-  font-style: italic;
-}
+.pd-notes-input:focus { box-shadow: none !important; outline: none !important; }
+.pd-notes-input::placeholder { color: var(--text-muted) !important; font-style: italic; }
 
 .pd-notes-footer {
   display: flex;
@@ -657,25 +660,38 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   box-shadow: 0 0 10px rgba(123, 47, 247, 0.4);
 }
 
-.pd-objectif-footer {
-  display: flex;
-  justify-content: space-between;
+.pd-objectif-footer { display: flex; justify-content: space-between; }
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .pd-charts           { grid-template-columns: 1fr; }
+  .pd-chart-card--full { grid-column: 1; }
+  .pd-header           { flex-direction: column; align-items: flex-start; }
+  .pd-header-right     { align-items: flex-start; }
+  .pd-stats            { gap: 0.5rem; }
+  .pd-stat             { min-width: 90px; padding: 0.7rem; }
+  .pd-stat-value       { font-size: 1.1rem; }
 }
 
-/* ── Edit perf button ── */
-.pd-edit-perf-btn {
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  cursor: pointer;
-  padding: 4px 6px;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  transition: color 0.2s, background 0.2s;
+@media (max-width: 480px) {
+  .pd-stats { display: grid; grid-template-columns: 1fr 1fr; }
 }
 
-.pd-edit-perf-btn:hover {
-  color: var(--accent-cyan);
-  background: rgba(0, 212, 255, 0.1);
+/* ── Modal responsive ── */
+@media (max-height: 700px) {
+  .pd-modal {
+    top: 1rem;
+    transform: translateX(-50%);
+    max-height: calc(100vh - 2rem);
+  }
+}
+
+@media (max-width: 480px) {
+  .pd-modal {
+    width: 95%;
+    padding: 1.2rem;
+    top: 1rem;
+    transform: translateX(-50%);
+    max-height: calc(100vh - 2rem);
+  }
 }

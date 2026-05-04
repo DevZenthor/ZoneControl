@@ -2,17 +2,17 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  FiHome, FiUser, FiLogOut, FiMenu, FiX, FiZap, FiUsers
+  FiHome, FiUser, FiLogOut, FiMenu, FiX, FiZap, FiUsers, FiDownload, FiEye
 } from 'react-icons/fi'
 import { supabase } from '../lib/supabase'
 import '../styles/navbar.css'
 
 export default function Navbar({ session }) {
-  const navigate  = useNavigate()
-  const location  = useLocation()
+  const navigate = useNavigate()
+  const location = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
-  const [profile, setProfile]   = useState(null)
+  const [profile, setProfile] = useState(null)
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20)
@@ -40,9 +40,10 @@ export default function Navbar({ session }) {
   }
 
   const links = [
-    { path: '/',        label: 'Home',     icon: <FiHome size={16} />  },
+    { path: '/', label: 'Home', icon: <FiHome size={16} /> },
     { path: '/compare', label: 'Comparer', icon: <FiUsers size={16} /> },
-    { path: '/profile', label: 'Profil',   icon: <FiUser size={16} />  },
+    { path: '/scouting', label: 'Scouting', icon: <FiEye size={16} /> },
+    { path: '/profile', label: 'Profil', icon: <FiUser size={16} /> },
   ]
 
   const isActive = (path) => {

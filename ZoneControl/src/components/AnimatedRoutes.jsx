@@ -3,20 +3,21 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 
 // ── Lazy pages ──
-const Home           = lazy(() => import('../pages/Home'))
-const Login          = lazy(() => import('../pages/Login'))
-const Register       = lazy(() => import('../pages/Register'))
-const Profile        = lazy(() => import('../pages/Profile'))
-const PlayerDetail   = lazy(() => import('../pages/PlayerDetail'))
+const Home = lazy(() => import('../pages/Home'))
+const Login = lazy(() => import('../pages/Login'))
+const Register = lazy(() => import('../pages/Register'))
+const Profile = lazy(() => import('../pages/Profile'))
+const PlayerDetail = lazy(() => import('../pages/PlayerDetail'))
 const ForgotPassword = lazy(() => import('../pages/ForgotPassword'))
-const ResetPassword  = lazy(() => import('../pages/ResetPassword'))
-const Compare        = lazy(() => import('../pages/Compare'))
-const NotFound       = lazy(() => import('../pages/NotFound'))
+const ResetPassword = lazy(() => import('../pages/ResetPassword'))
+const Compare = lazy(() => import('../pages/Compare'))
+const NotFound = lazy(() => import('../pages/NotFound'))
+const Scouting = lazy(() => import('../pages/Scouting'))
 
 const pageVariants = {
   initial: { opacity: 0, y: 16 },
   animate: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' } },
-  exit:    { opacity: 0, y: -10, transition: { duration: 0.2 } },
+  exit: { opacity: 0, y: -10, transition: { duration: 0.2 } },
 }
 
 function PageLoader() {
@@ -44,7 +45,7 @@ function PageWrapper({ children }) {
 
 export default function AnimatedRoutes({ session }) {
   const location = useLocation()
-  const isAuth   = session !== null
+  const isAuth = session !== null
 
   return (
     <AnimatePresence mode="wait">
@@ -91,6 +92,12 @@ export default function AnimatedRoutes({ session }) {
         <Route path="/compare" element={
           isAuth
             ? <PageWrapper><Compare session={session} /></PageWrapper>
+            : <Navigate to="/login" replace />
+        } />
+
+        <Route path="/scouting" element={
+          isAuth
+            ? <PageWrapper><Scouting session={session} /></PageWrapper>
             : <Navigate to="/login" replace />
         } />
 
